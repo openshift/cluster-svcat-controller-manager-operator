@@ -2,4 +2,4 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: service-catalog-controller
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager

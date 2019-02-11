@@ -8,4 +8,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: service-catalog-controller
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager

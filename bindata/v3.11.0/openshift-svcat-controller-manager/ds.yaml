@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
   name: controller-manager
   labels:
     app: openshift-controller-manager
@@ -33,10 +33,10 @@ spec:
         - -v
         - "3"
         - --leader-election-namespace
-        - kube-service-catalog
+        - kube-service-catalog-controller-manager
         - --leader-elect-resource-lock
         - configmaps
-        - --cluster-id-configmap-namespace=kube-service-catalog
+        - --cluster-id-configmap-namespace=kube-service-catalog-controller-manager
         - --broker-relist-interval
         - "5m"
         - --feature-gates
