@@ -1,0 +1,11 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:openshift:operator:openshift-svcat-controller-manager-operator
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  namespace: openshift-svcat-controller-manager-operator
+  name: openshift-svcat-controller-manager-operator

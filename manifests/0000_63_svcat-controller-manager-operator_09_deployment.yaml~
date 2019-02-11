@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: openshift-svcat-controller-manager-operator
+  name: openshift-svcat-controller-manager-operator
+  labels:
+    app: openshift-svcat-controller-manager-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openshift-svcat-controller-manager-operator
+  template:
+    metadata:
+      name: openshift-svcat-controller-manager-operator
+      labels:
+        app: openshift-svcat-controller-manager-operator
+    spec:
+      serviceAccountName: openshift-svcat-controller-manager-operator
+      containers:
+      - name: operator
+        image: docker.io/openshift/origin-cluster-svcat-controller-manager-operator:v4.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8443
+          name: metrics
+          protocol: TCP
+        command: ["cluster-svcat-controller-manager-operator", "operator"]
+        args:
+        - "--config=/var/run/configmaps/config/config.yaml"
+        - "-v=4"
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 10m
+        volumeMounts:
+        - mountPath: /var/run/configmaps/config
+          name: config
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
+        env:
+        - name: IMAGE
+          value: quay.io/openshift/origin-hypershift:v4.0
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+      volumes:
+      - name: serving-cert
+        secret:
+          defaultMode: 400
+          secretName: openshift-svcat-controller-manager-operator-serving-cert
+          optional: true
+      - name: config
+        configMap:
+          defaultMode: 440
+          name: openshift-svcat-controller-manager-operator-config
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - operator: Exists

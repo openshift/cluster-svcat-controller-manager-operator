@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  namespace: kube-service-catalog
+  name: controller-manager
+  labels:
+    app: openshift-controller-manager
+    controller-manager: "true"
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: openshift-controller-manager
+      controller-manager: "true"
+  template:
+    metadata:
+      name: openshift-controller-manager
+      labels:
+        app: openshift-controller-manager
+        controller-manager: "true"
+    spec:
+      serviceAccountName: service-catalog-controller
+      containers:
+      - name: controller-manager
+        image: ${IMAGE}
+        imagePullPolicy: IfNotPresent
+        command: ["/usr/bin/service-catalog"]
+        args:
+        - controller-manager
+        - --secure-port
+        - "6443"
+        - -v
+        - "3"
+        - --leader-election-namespace
+        - kube-service-catalog
+        - --leader-elect-resource-lock
+        - configmaps
+        - --cluster-id-configmap-namespace=kube-service-catalog
+        - --broker-relist-interval
+        - "5m"
+        - --feature-gates
+        - OriginatingIdentity=true
+        - --feature-gates
+        - AsyncBindingOperations=true
+        - --feature-gates
+        - NamespacedServiceBroker=true
+        resources:
+          requests:
+            memory: 100Mi
+            cpu: 100m
+        ports:
+        - containerPort: 6443
+        volumeMounts:
+        - mountPath: /var/run/configmaps/config
+          name: config
+        - mountPath: /var/run/configmaps/client-ca
+          name: client-ca
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
+      volumes:
+      - name: config
+        configMap:
+          name: config
+      - name: client-ca
+        configMap:
+          name: client-ca
+      - name: serving-cert
+        secret:
+          secretName: serving-cert
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - operator: Exists

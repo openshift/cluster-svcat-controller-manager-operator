@@ -1,0 +1,20 @@
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+spec:
+  tags:
+  - name: cluster-svcat-controller-manager-operator
+    from:
+      kind: DockerImage
+      name: docker.io/openshift/origin-cluster-svcat-controller-manager-operator:v4.0
+  - name: hypershift
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-service-catalog:v4.0
+  - name: docker-builder
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-docker-builder:v4.0
+  - name: deployer
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-deployer:v4.0

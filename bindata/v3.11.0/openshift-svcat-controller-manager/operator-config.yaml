@@ -1,0 +1,11 @@
+apiVersion: operator.openshift.io/v1
+kind: OpenShiftControllerManager
+metadata:
+  name: svcat
+spec:
+  managementState: Managed
+  imagePullSpec: openshift/origin-service-catalog:latest
+  version: 3.11.0
+  logging:
+    level: 4
+  replicas: 2
