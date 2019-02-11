@@ -62,8 +62,8 @@ func (fi bindataFileInfo) Sys() interface{} {
 var _v3110OpenshiftSvcatControllerManagerCmYaml = []byte(`apiVersion: v1
 kind: ConfigMap
 metadata:
-  namespace: kube-service-catalog
-  name: controller-manager-config
+  namespace: kube-service-catalog-controller-manager
+  name: config
 data:
   config.yaml:
 `)
@@ -186,7 +186,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: service-catalog-controller
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
 `)
 
 func v3110OpenshiftSvcatControllerManagerCrbCatalogControllerYamlBytes() ([]byte, error) {
@@ -214,7 +214,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: service-catalog-controller
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
 `)
 
 func v3110OpenshiftSvcatControllerManagerCrbControllerNamespaceViewerBindingYamlBytes() ([]byte, error) {
@@ -254,7 +254,7 @@ func v3110OpenshiftSvcatControllerManagerDefaultconfigYaml() (*asset, error) {
 var _v3110OpenshiftSvcatControllerManagerDsYaml = []byte(`apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
   name: controller-manager
   labels:
     app: openshift-controller-manager
@@ -286,10 +286,10 @@ spec:
         - -v
         - "3"
         - --leader-election-namespace
-        - kube-service-catalog
+        - kube-service-catalog-controller-manager
         - --leader-elect-resource-lock
         - configmaps
-        - --cluster-id-configmap-namespace=kube-service-catalog
+        - --cluster-id-configmap-namespace=kube-service-catalog-controller-manager
         - --broker-relist-interval
         - "5m"
         - --feature-gates
@@ -374,7 +374,7 @@ var _v3110OpenshiftSvcatControllerManagerRoleClusterInfoConfigmapYaml = []byte(`
 kind: Role
 metadata:
   name: cluster-info-configmap
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
 rules:
 - apiGroups:     [""]
   resources:     ["configmaps"]
@@ -401,7 +401,7 @@ var _v3110OpenshiftSvcatControllerManagerRoleConfigmapAccessorYaml = []byte(`api
 kind: Role
 metadata:
   name: configmap-accessor
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
 rules:
 - apiGroups:
   - ""
@@ -434,14 +434,14 @@ var _v3110OpenshiftSvcatControllerManagerRolebindingClusterInfoConfigmapYaml = [
 kind: RoleBinding
 metadata:
   name: cluster-info-configmap-binding
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: cluster-info-configmap
 subjects:
 - kind: ServiceAccount
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
   name: service-catalog-controller
 `)
 
@@ -464,13 +464,13 @@ var _v3110OpenshiftSvcatControllerManagerRolebindingConfigmapAccessorYaml = []by
 kind: RoleBinding
 metadata:
   name: configmap-accessor-binding
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
 roleRef:
   kind: Role
   name: configmap-accessor
 subjects:
 - kind: ServiceAccount
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
   name: service-catalog-controller
 `)
 
@@ -493,7 +493,7 @@ var _v3110OpenshiftSvcatControllerManagerSaYaml = []byte(`kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: service-catalog-controller
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
 `)
 
 func v3110OpenshiftSvcatControllerManagerSaYamlBytes() ([]byte, error) {
@@ -515,7 +515,7 @@ var _v3110OpenshiftSvcatControllerManagerServicemonitorRoleYaml = []byte(`apiVer
 kind: Role
 metadata:
   name: prometheus-k8s
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
 rules:
 - apiGroups:
   - ""
@@ -577,7 +577,7 @@ func v3110OpenshiftSvcatControllerManagerServicemonitorRolebindingYaml() (*asset
 var _v3110OpenshiftSvcatControllerManagerSvcYaml = []byte(`apiVersion: v1
 kind: Service
 metadata:
-  namespace: kube-service-catalog
+  namespace: kube-service-catalog-controller-manager
   name: controller-manager
   annotations:
     service.alpha.openshift.io/serving-cert-secret-name: serving-cert

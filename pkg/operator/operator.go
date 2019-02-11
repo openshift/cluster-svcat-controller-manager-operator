@@ -28,7 +28,7 @@ import (
 
 const (
 	kubeAPIServerNamespaceName = "openshift-kube-apiserver" // only used in sync_openshiftcontrollermanager_v311_00.go to copy the configmap
-	targetNamespaceName        = "kube-service-catalog"
+	targetNamespaceName        = "kube-service-catalog-controller-manager"
 	workQueueKey               = "key"
 	workloadFailingCondition   = "WorkloadFailing"
 )
