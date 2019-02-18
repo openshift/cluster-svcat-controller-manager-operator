@@ -257,20 +257,20 @@ metadata:
   namespace: kube-service-catalog-controller-manager
   name: controller-manager
   labels:
-    app: openshift-controller-manager
+    app: svcat-controller-manager
     controller-manager: "true"
 spec:
   updateStrategy:
     type: RollingUpdate
   selector:
     matchLabels:
-      app: openshift-controller-manager
+      app: svcat-controller-manager
       controller-manager: "true"
   template:
     metadata:
-      name: openshift-controller-manager
+      name: svcat-controller-manager
       labels:
-        app: openshift-controller-manager
+        app: svcat-controller-manager
         controller-manager: "true"
     spec:
       serviceAccountName: service-catalog-controller
@@ -548,7 +548,7 @@ var _v3110OpenshiftSvcatControllerManagerServicemonitorRolebindingYaml = []byte(
 kind: RoleBinding
 metadata:
   name: prometheus-k8s
-  namespace: openshift-controller-manager
+  namespace: kube-service-catalog-controller-manager
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role

@@ -35,7 +35,7 @@ func main() {
 func NewSSCSCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cluster-svcat-controller-manager-operator",
-		Short: "OpenShift cluster openshift-controller-manager operator",
+		Short: "OpenShift cluster svcat-controller-manager operator",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
 			os.Exit(1)

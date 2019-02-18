@@ -127,7 +127,7 @@ func (c OpenShiftControllerManagerOperator) sync() error {
 	return err
 }
 
-// Run starts the openshift-controller-manager and blocks until stopCh is closed.
+// Run starts the svcat-controller-manager and blocks until stopCh is closed.
 func (c *OpenShiftControllerManagerOperator) Run(workers int, stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
