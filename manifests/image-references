@@ -10,11 +10,3 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-service-catalog:v4.0
-  - name: docker-builder
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-docker-builder:v4.0
-  - name: deployer
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-deployer:v4.0
