@@ -14,11 +14,11 @@ type operatorClient struct {
 }
 
 func (p *operatorClient) Informer() cache.SharedIndexInformer {
-	return p.informers.Operator().V1().OpenShiftControllerManagers().Informer()
+	return p.informers.Operator().V1().ServiceCatalogControllerManagers().Informer()
 }
 
 func (p *operatorClient) CurrentStatus() (operatorapiv1.OperatorStatus, error) {
-	instance, err := p.informers.Operator().V1().OpenShiftControllerManagers().Lister().Get("svcat")
+	instance, err := p.informers.Operator().V1().ServiceCatalogControllerManagers().Lister().Get("cluster")
 	if err != nil {
 		return operatorapiv1.OperatorStatus{}, err
 	}
@@ -27,16 +27,15 @@ func (p *operatorClient) CurrentStatus() (operatorapiv1.OperatorStatus, error) {
 }
 
 func (c *operatorClient) GetOperatorState() (*operatorapiv1.OperatorSpec, *operatorapiv1.OperatorStatus, string, error) {
-	instance, err := c.informers.Operator().V1().OpenShiftControllerManagers().Lister().Get("svcat")
+	instance, err := c.informers.Operator().V1().ServiceCatalogControllerManagers().Lister().Get("cluster")
 	if err != nil {
 		return nil, nil, "", err
 	}
-
 	return &instance.Spec.OperatorSpec, &instance.Status.OperatorStatus, instance.ResourceVersion, nil
 }
 
 func (c *operatorClient) UpdateOperatorSpec(resourceVersion string, spec *operatorapiv1.OperatorSpec) (*operatorapiv1.OperatorSpec, string, error) {
-	original, err := c.informers.Operator().V1().OpenShiftControllerManagers().Lister().Get("svcat")
+	original, err := c.informers.Operator().V1().ServiceCatalogControllerManagers().Lister().Get("cluster")
 	if err != nil {
 		return nil, "", err
 	}
@@ -44,7 +43,7 @@ func (c *operatorClient) UpdateOperatorSpec(resourceVersion string, spec *operat
 	copy.ResourceVersion = resourceVersion
 	copy.Spec.OperatorSpec = *spec
 
-	ret, err := c.client.OpenShiftControllerManagers().Update(copy)
+	ret, err := c.client.ServiceCatalogControllerManagers().Update(copy)
 	if err != nil {
 		return nil, "", err
 	}
@@ -52,7 +51,7 @@ func (c *operatorClient) UpdateOperatorSpec(resourceVersion string, spec *operat
 	return &ret.Spec.OperatorSpec, ret.ResourceVersion, nil
 }
 func (c *operatorClient) UpdateOperatorStatus(resourceVersion string, status *operatorapiv1.OperatorStatus) (*operatorapiv1.OperatorStatus, error) {
-	original, err := c.informers.Operator().V1().OpenShiftControllerManagers().Lister().Get("svcat")
+	original, err := c.informers.Operator().V1().ServiceCatalogControllerManagers().Lister().Get("cluster")
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +59,7 @@ func (c *operatorClient) UpdateOperatorStatus(resourceVersion string, status *op
 	copy.ResourceVersion = resourceVersion
 	copy.Status.OperatorStatus = *status
 
-	ret, err := c.client.OpenShiftControllerManagers().UpdateStatus(copy)
+	ret, err := c.client.ServiceCatalogControllerManagers().UpdateStatus(copy)
 	if err != nil {
 		return nil, err
 	}
