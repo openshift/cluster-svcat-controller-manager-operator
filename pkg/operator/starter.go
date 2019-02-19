@@ -64,7 +64,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 	}
 
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
-		"svcat-controller-manager",
+		"service-catalog-controller-manager",
 		[]configv1.ObjectReference{},
 		configClient.ConfigV1(),
 		opClient,
