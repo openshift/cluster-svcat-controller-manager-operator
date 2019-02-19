@@ -19,7 +19,7 @@ spec:
       serviceAccountName: openshift-svcat-controller-manager-operator
       containers:
       - name: operator
-        image: docker.io/openshift/origin-cluster-svcat-controller-manager-operator:v4.0
+        image: registry.svc.ci.openshift.org/openshift/origin-v4.0:cluster-svcat-controller-manager-operator
         imagePullPolicy: Always
         ports:
         - containerPort: 8443
@@ -40,7 +40,7 @@ spec:
           name: serving-cert
         env:
         - name: IMAGE
-          value: quay.io/openshift/origin-service-catalog:v4.0
+          value: registry.svc.ci.openshift.org/openshift/origin-v4.0:service-catalog
         - name: POD_NAME
           valueFrom:
             fieldRef:
