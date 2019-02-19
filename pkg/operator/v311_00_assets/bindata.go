@@ -6,7 +6,7 @@
 // bindata/v3.11.0/openshift-svcat-controller-manager/crb-controller-namespace-viewer-binding.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/defaultconfig.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/ds.yaml
-// bindata/v3.11.0/openshift-svcat-controller-manager/operator-config.yaml
+// bindata/v3.11.0/openshift-svcat-controller-manager/ns.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/role-cluster-info-configmap.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/role-configmap-accessor.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/rolebinding-cluster-info-configmap.yaml
@@ -233,7 +233,7 @@ func v3110OpenshiftSvcatControllerManagerCrbControllerNamespaceViewerBindingYaml
 }
 
 var _v3110OpenshiftSvcatControllerManagerDefaultconfigYaml = []byte(`apiVersion: openshiftcontrolplane.config.openshift.io/v1
-kind: OpenShiftControllerManagerConfig
+kind: ServiceCatalogControllerManagerConfig
 `)
 
 func v3110OpenshiftSvcatControllerManagerDefaultconfigYamlBytes() ([]byte, error) {
@@ -283,8 +283,6 @@ spec:
         - controller-manager
         - --secure-port
         - "6443"
-        - -v
-        - "3"
         - --leader-election-namespace
         - kube-service-catalog-controller-manager
         - --leader-elect-resource-lock
@@ -305,6 +303,9 @@ spec:
         ports:
         - containerPort: 6443
         volumeMounts:
+        - mountPath: /var/run/kubernetes-service-catalog
+          name: apiserver-ssl
+          readOnly: true
         - mountPath: /var/run/configmaps/config
           name: config
         - mountPath: /var/run/configmaps/client-ca
@@ -312,6 +313,15 @@ spec:
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
       volumes:
+      - name: apiserver-ssl
+        secret:
+          defaultMode: 420
+          secretName: serving-cert
+          items:
+          - key: tls.crt
+            path: apiserver.crt
+          - key: tls.key
+            path: apiserver.key
       - name: config
         configMap:
           name: config
@@ -342,30 +352,24 @@ func v3110OpenshiftSvcatControllerManagerDsYaml() (*asset, error) {
 	return a, nil
 }
 
-var _v3110OpenshiftSvcatControllerManagerOperatorConfigYaml = []byte(`apiVersion: operator.openshift.io/v1
-kind: OpenShiftControllerManager
+var _v3110OpenshiftSvcatControllerManagerNsYaml = []byte(`apiVersion: v1
+kind: Namespace
 metadata:
-  name: svcat
-spec:
-  managementState: Managed
-  imagePullSpec: openshift/origin-service-catalog:latest
-  version: 3.11.0
-  logging:
-    level: 4
-  replicas: 2
-`)
+  name: kube-service-catalog-controller-manager
+  labels:
+    openshift.io/run-level: "1"`)
 
-func v3110OpenshiftSvcatControllerManagerOperatorConfigYamlBytes() ([]byte, error) {
-	return _v3110OpenshiftSvcatControllerManagerOperatorConfigYaml, nil
+func v3110OpenshiftSvcatControllerManagerNsYamlBytes() ([]byte, error) {
+	return _v3110OpenshiftSvcatControllerManagerNsYaml, nil
 }
 
-func v3110OpenshiftSvcatControllerManagerOperatorConfigYaml() (*asset, error) {
-	bytes, err := v3110OpenshiftSvcatControllerManagerOperatorConfigYamlBytes()
+func v3110OpenshiftSvcatControllerManagerNsYaml() (*asset, error) {
+	bytes, err := v3110OpenshiftSvcatControllerManagerNsYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "v3.11.0/openshift-svcat-controller-manager/operator-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "v3.11.0/openshift-svcat-controller-manager/ns.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -665,7 +669,7 @@ var _bindata = map[string]func() (*asset, error){
 	"v3.11.0/openshift-svcat-controller-manager/crb-controller-namespace-viewer-binding.yaml": v3110OpenshiftSvcatControllerManagerCrbControllerNamespaceViewerBindingYaml,
 	"v3.11.0/openshift-svcat-controller-manager/defaultconfig.yaml":                           v3110OpenshiftSvcatControllerManagerDefaultconfigYaml,
 	"v3.11.0/openshift-svcat-controller-manager/ds.yaml":                                      v3110OpenshiftSvcatControllerManagerDsYaml,
-	"v3.11.0/openshift-svcat-controller-manager/operator-config.yaml":                         v3110OpenshiftSvcatControllerManagerOperatorConfigYaml,
+	"v3.11.0/openshift-svcat-controller-manager/ns.yaml":                                      v3110OpenshiftSvcatControllerManagerNsYaml,
 	"v3.11.0/openshift-svcat-controller-manager/role-cluster-info-configmap.yaml":             v3110OpenshiftSvcatControllerManagerRoleClusterInfoConfigmapYaml,
 	"v3.11.0/openshift-svcat-controller-manager/role-configmap-accessor.yaml":                 v3110OpenshiftSvcatControllerManagerRoleConfigmapAccessorYaml,
 	"v3.11.0/openshift-svcat-controller-manager/rolebinding-cluster-info-configmap.yaml":      v3110OpenshiftSvcatControllerManagerRolebindingClusterInfoConfigmapYaml,
@@ -725,7 +729,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"crb-controller-namespace-viewer-binding.yaml": {v3110OpenshiftSvcatControllerManagerCrbControllerNamespaceViewerBindingYaml, map[string]*bintree{}},
 			"defaultconfig.yaml":                           {v3110OpenshiftSvcatControllerManagerDefaultconfigYaml, map[string]*bintree{}},
 			"ds.yaml":                                      {v3110OpenshiftSvcatControllerManagerDsYaml, map[string]*bintree{}},
-			"operator-config.yaml":                         {v3110OpenshiftSvcatControllerManagerOperatorConfigYaml, map[string]*bintree{}},
+			"ns.yaml":                                      {v3110OpenshiftSvcatControllerManagerNsYaml, map[string]*bintree{}},
 			"role-cluster-info-configmap.yaml":             {v3110OpenshiftSvcatControllerManagerRoleClusterInfoConfigmapYaml, map[string]*bintree{}},
 			"role-configmap-accessor.yaml":                 {v3110OpenshiftSvcatControllerManagerRoleConfigmapAccessorYaml, map[string]*bintree{}},
 			"rolebinding-cluster-info-configmap.yaml":      {v3110OpenshiftSvcatControllerManagerRolebindingClusterInfoConfigmapYaml, map[string]*bintree{}},

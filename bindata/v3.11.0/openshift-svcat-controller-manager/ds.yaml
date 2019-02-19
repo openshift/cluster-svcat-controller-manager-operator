@@ -30,8 +30,6 @@ spec:
         - controller-manager
         - --secure-port
         - "6443"
-        - -v
-        - "3"
         - --leader-election-namespace
         - kube-service-catalog-controller-manager
         - --leader-elect-resource-lock
@@ -52,6 +50,9 @@ spec:
         ports:
         - containerPort: 6443
         volumeMounts:
+        - mountPath: /var/run/kubernetes-service-catalog
+          name: apiserver-ssl
+          readOnly: true
         - mountPath: /var/run/configmaps/config
           name: config
         - mountPath: /var/run/configmaps/client-ca
@@ -59,6 +60,15 @@ spec:
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
       volumes:
+      - name: apiserver-ssl
+        secret:
+          defaultMode: 420
+          secretName: serving-cert
+          items:
+          - key: tls.crt
+            path: apiserver.crt
+          - key: tls.key
+            path: apiserver.key
       - name: config
         configMap:
           name: config

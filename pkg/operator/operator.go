@@ -27,13 +27,13 @@ import (
 )
 
 const (
-	kubeAPIServerNamespaceName = "openshift-kube-apiserver" // only used in sync_openshiftcontrollermanager_v311_00.go to copy the configmap
+	kubeAPIServerNamespaceName = "openshift-kube-apiserver" // only used in sync_ServiceCatalogControllerManager_v311_00.go to copy the configmap
 	targetNamespaceName        = "kube-service-catalog-controller-manager"
 	workQueueKey               = "key"
 	workloadFailingCondition   = "WorkloadFailing"
 )
 
-type OpenShiftControllerManagerOperator struct {
+type ServiceCatalogControllerManagerOperator struct {
 	targetImagePullSpec  string
 	operatorConfigClient operatorclientv1.OperatorV1Interface
 
@@ -46,15 +46,15 @@ type OpenShiftControllerManagerOperator struct {
 	recorder    events.Recorder
 }
 
-func NewOpenShiftControllerManagerOperator(
+func NewServiceCatalogControllerManagerOperator(
 	targetImagePullSpec string,
-	operatorConfigInformer operatorinformersv1.OpenShiftControllerManagerInformer,
-	kubeInformersForOpenshiftControllerManager informers.SharedInformerFactory,
+	operatorConfigInformer operatorinformersv1.ServiceCatalogControllerManagerInformer,
+	kubeInformersForServiceCatalogControllerManager informers.SharedInformerFactory,
 	operatorConfigClient operatorclientv1.OperatorV1Interface,
 	kubeClient kubernetes.Interface,
 	recorder events.Recorder,
-) *OpenShiftControllerManagerOperator {
-	c := &OpenShiftControllerManagerOperator{
+) *ServiceCatalogControllerManagerOperator {
+	c := &ServiceCatalogControllerManagerOperator{
 		targetImagePullSpec:  targetImagePullSpec,
 		operatorConfigClient: operatorConfigClient,
 		kubeClient:           kubeClient,
@@ -64,19 +64,19 @@ func NewOpenShiftControllerManagerOperator(
 	}
 
 	operatorConfigInformer.Informer().AddEventHandler(c.eventHandler())
-	kubeInformersForOpenshiftControllerManager.Core().V1().ConfigMaps().Informer().AddEventHandler(c.eventHandler())
-	kubeInformersForOpenshiftControllerManager.Core().V1().ServiceAccounts().Informer().AddEventHandler(c.eventHandler())
-	kubeInformersForOpenshiftControllerManager.Core().V1().Services().Informer().AddEventHandler(c.eventHandler())
-	kubeInformersForOpenshiftControllerManager.Apps().V1().Deployments().Informer().AddEventHandler(c.eventHandler())
+	kubeInformersForServiceCatalogControllerManager.Core().V1().ConfigMaps().Informer().AddEventHandler(c.eventHandler())
+	kubeInformersForServiceCatalogControllerManager.Core().V1().ServiceAccounts().Informer().AddEventHandler(c.eventHandler())
+	kubeInformersForServiceCatalogControllerManager.Core().V1().Services().Informer().AddEventHandler(c.eventHandler())
+	kubeInformersForServiceCatalogControllerManager.Apps().V1().Deployments().Informer().AddEventHandler(c.eventHandler())
 
 	// we only watch some namespaces
-	kubeInformersForOpenshiftControllerManager.Core().V1().Namespaces().Informer().AddEventHandler(c.namespaceEventHandler())
+	kubeInformersForServiceCatalogControllerManager.Core().V1().Namespaces().Informer().AddEventHandler(c.namespaceEventHandler())
 
 	return c
 }
 
-func (c OpenShiftControllerManagerOperator) sync() error {
-	operatorConfig, err := c.operatorConfigClient.OpenShiftControllerManagers().Get("svcat", metav1.GetOptions{})
+func (c ServiceCatalogControllerManagerOperator) sync() error {
+	operatorConfig, err := c.operatorConfigClient.ServiceCatalogControllerManagers().Get("cluster", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (c OpenShiftControllerManagerOperator) sync() error {
 		})
 
 		if !equality.Semantic.DeepEqual(operatorConfig.Status, originalOperatorConfig.Status) {
-			if _, err := c.operatorConfigClient.OpenShiftControllerManagers().UpdateStatus(operatorConfig); err != nil {
+			if _, err := c.operatorConfigClient.ServiceCatalogControllerManagers().UpdateStatus(operatorConfig); err != nil {
 				return err
 			}
 		}
@@ -119,7 +119,7 @@ func (c OpenShiftControllerManagerOperator) sync() error {
 		return nil
 	}
 
-	forceRequeue, err := syncOpenShiftControllerManager_v311_00_to_latest(c, operatorConfig)
+	forceRequeue, err := syncServiceCatalogControllerManager_v311_00_to_latest(c, operatorConfig)
 	if forceRequeue && err != nil {
 		c.queue.AddRateLimited(workQueueKey)
 	}
@@ -128,12 +128,12 @@ func (c OpenShiftControllerManagerOperator) sync() error {
 }
 
 // Run starts the svcat-controller-manager and blocks until stopCh is closed.
-func (c *OpenShiftControllerManagerOperator) Run(workers int, stopCh <-chan struct{}) {
+func (c *ServiceCatalogControllerManagerOperator) Run(workers int, stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
-	glog.Infof("Starting OpenShiftControllerManagerOperator")
-	defer glog.Infof("Shutting down OpenShiftControllerManagerOperator")
+	glog.Infof("Starting ServiceCatalogControllerManagerOperator")
+	defer glog.Infof("Shutting down ServiceCatalogControllerManagerOperator")
 
 	// doesn't matter what workers say, only start one.
 	go wait.Until(c.runWorker, time.Second, stopCh)
@@ -141,12 +141,12 @@ func (c *OpenShiftControllerManagerOperator) Run(workers int, stopCh <-chan stru
 	<-stopCh
 }
 
-func (c *OpenShiftControllerManagerOperator) runWorker() {
+func (c *ServiceCatalogControllerManagerOperator) runWorker() {
 	for c.processNextWorkItem() {
 	}
 }
 
-func (c *OpenShiftControllerManagerOperator) processNextWorkItem() bool {
+func (c *ServiceCatalogControllerManagerOperator) processNextWorkItem() bool {
 	dsKey, quit := c.queue.Get()
 	if quit {
 		return false
@@ -169,7 +169,7 @@ func (c *OpenShiftControllerManagerOperator) processNextWorkItem() bool {
 }
 
 // eventHandler queues the operator to check spec and status
-func (c *OpenShiftControllerManagerOperator) eventHandler() cache.ResourceEventHandler {
+func (c *ServiceCatalogControllerManagerOperator) eventHandler() cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerFuncs{
 		AddFunc:    func(obj interface{}) { c.queue.Add(workQueueKey) },
 		UpdateFunc: func(old, new interface{}) { c.queue.Add(workQueueKey) },
@@ -180,7 +180,7 @@ func (c *OpenShiftControllerManagerOperator) eventHandler() cache.ResourceEventH
 // this set of namespaces will include things like logging and metrics which are used to drive
 var interestingNamespaces = sets.NewString(targetNamespaceName)
 
-func (c *OpenShiftControllerManagerOperator) namespaceEventHandler() cache.ResourceEventHandler {
+func (c *ServiceCatalogControllerManagerOperator) namespaceEventHandler() cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			ns, ok := obj.(*corev1.Namespace)
