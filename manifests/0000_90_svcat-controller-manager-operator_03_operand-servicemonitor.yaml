@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: svcat-controller-manager
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-svcat-controller-manager-operator
 spec:
   endpoints:
   - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -14,5 +14,5 @@ spec:
       serverName: controller-manager.kube-service-catalog-controller-manager.svc
   namespaceSelector:
     matchNames:
-    - kube-service-catalog-controller-manager
+    - openshift-svcat-controller-manager-operator
   selector: {}

@@ -30,9 +30,9 @@ spec:
 EOF
 ```
 Once the cluster `ServiceCatalogControllerManager` is found to exist and have a `managementState` of `Managed` the operator will create necessary resources in the
-`kube-service-catalog-controller-manager` namespace for deploying the Service Catalog API Server.
+`openshift-svcat-controller-manager-operator` namespace for deploying the Service Catalog API Server.
 
-Watch for service catalog controller manager to come up in the kube-service-catalog-controller-manager namespace.
+Watch for service catalog controller manager to come up in the `openshift-svcat-controller-manager-operator` namespace.
 
 ## Verification & debugging
 Nothing happens without the CR:
