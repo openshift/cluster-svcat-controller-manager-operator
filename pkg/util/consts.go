@@ -1,5 +1,7 @@
 package util
 
 const (
-	OperatorNamespaceName = "openshift-svcat-controller-manager-operator"
+	KubeAPIServerNamespace = "openshift-kube-apiserver"
+	OperatorNamespace      = "openshift-svcat-controller-manager-operator"
+	TargetNamespace        = "openshift-service-catalog-controller-manager"
 )

@@ -22,13 +22,14 @@ import (
 	operatorapiv1 "github.com/openshift/api/operator/v1"
 	operatorclientv1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	operatorinformersv1 "github.com/openshift/client-go/operator/informers/externalversions/operator/v1"
+	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/util"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 )
 
 const (
 	kubeAPIServerNamespaceName = "openshift-kube-apiserver" // only used in sync_ServiceCatalogControllerManager_v311_00.go to copy the configmap
-	targetNamespaceName        = "openshift-service-catalog-controller-manager"
+	targetNamespaceName        = util.TargetNamespace
 	workQueueKey               = "key"
 	workloadFailingCondition   = "WorkloadFailing"
 )
