@@ -3,11 +3,6 @@ kind: ServiceCatalogControllerManager
 metadata:
   name: cluster
 spec:
-  managementState: Managed
-  logLevel: Debug
+  logLevel: "Normal"
+  managementState: Removed
 
-
-#  Normal - 2
-#  Debug - 4
-#  Trace - 6
-#  TraceAll - 8
