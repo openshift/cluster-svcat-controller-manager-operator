@@ -187,7 +187,7 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(client ap
 		required.Spec.Template.Spec.Containers[0].Image = imagePullSpec
 	}
 
-	level := 2
+	level := 3
 	switch options.Spec.LogLevel {
 	case operatorapiv1.TraceAll:
 		level = 8
@@ -196,7 +196,7 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(client ap
 	case operatorapiv1.Debug:
 		level = 4
 	case operatorapiv1.Normal:
-		level = 2
+		level = 3
 	}
 	required.Spec.Template.Spec.Containers[0].Args = append(required.Spec.Template.Spec.Containers[0].Args, fmt.Sprintf("-v=%d", level))
 
