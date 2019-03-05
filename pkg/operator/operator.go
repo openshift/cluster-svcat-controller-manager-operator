@@ -120,9 +120,7 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 		return nil
 
 	default:
-		if len(operatorConfig.Spec.ManagementState) > 0 {
-			c.recorder.Warningf("ManagementStateUnknown", "Unrecognized operator management state %q", operatorConfig.Spec.ManagementState)
-		}
+		c.recorder.Warningf("ManagementStateUnknown", "Unrecognized operator management state %q", operatorConfig.Spec.ManagementState)
 		return nil
 	}
 
