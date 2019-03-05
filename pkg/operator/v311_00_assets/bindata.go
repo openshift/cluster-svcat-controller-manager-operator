@@ -62,7 +62,7 @@ func (fi bindataFileInfo) Sys() interface{} {
 var _v3110OpenshiftSvcatControllerManagerCmYaml = []byte(`apiVersion: v1
 kind: ConfigMap
 metadata:
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
   name: config
 data:
   config.yaml:
@@ -186,7 +186,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: service-catalog-controller
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
 `)
 
 func v3110OpenshiftSvcatControllerManagerCrbCatalogControllerYamlBytes() ([]byte, error) {
@@ -214,7 +214,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: service-catalog-controller
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
 `)
 
 func v3110OpenshiftSvcatControllerManagerCrbControllerNamespaceViewerBindingYamlBytes() ([]byte, error) {
@@ -254,7 +254,7 @@ func v3110OpenshiftSvcatControllerManagerDefaultconfigYaml() (*asset, error) {
 var _v3110OpenshiftSvcatControllerManagerDsYaml = []byte(`apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
   name: controller-manager
   labels:
     app: svcat-controller-manager
@@ -284,10 +284,10 @@ spec:
         - --secure-port
         - "6443"
         - --leader-election-namespace
-        - kube-service-catalog-controller-manager
+        - openshift-service-catalog-controller-manager
         - --leader-elect-resource-lock
         - configmaps
-        - --cluster-id-configmap-namespace=kube-service-catalog-controller-manager
+        - --cluster-id-configmap-namespace=openshift-service-catalog-controller-manager
         - --broker-relist-interval
         - "5m"
         - --feature-gates
@@ -333,6 +333,7 @@ spec:
           secretName: serving-cert
       nodeSelector:
         node-role.kubernetes.io/master: ""
+      priorityClassName: "system-cluster-critical"
       tolerations:
       - operator: Exists
 `)
@@ -355,7 +356,7 @@ func v3110OpenshiftSvcatControllerManagerDsYaml() (*asset, error) {
 var _v3110OpenshiftSvcatControllerManagerNsYaml = []byte(`apiVersion: v1
 kind: Namespace
 metadata:
-  name: kube-service-catalog-controller-manager
+  name: openshift-service-catalog-controller-manager
   labels:
     openshift.io/run-level: "1"`)
 
@@ -378,7 +379,7 @@ var _v3110OpenshiftSvcatControllerManagerRoleClusterInfoConfigmapYaml = []byte(`
 kind: Role
 metadata:
   name: cluster-info-configmap
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
 rules:
 - apiGroups:     [""]
   resources:     ["configmaps"]
@@ -405,7 +406,7 @@ var _v3110OpenshiftSvcatControllerManagerRoleConfigmapAccessorYaml = []byte(`api
 kind: Role
 metadata:
   name: configmap-accessor
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
 rules:
 - apiGroups:
   - ""
@@ -438,14 +439,14 @@ var _v3110OpenshiftSvcatControllerManagerRolebindingClusterInfoConfigmapYaml = [
 kind: RoleBinding
 metadata:
   name: cluster-info-configmap-binding
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: cluster-info-configmap
 subjects:
 - kind: ServiceAccount
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
   name: service-catalog-controller
 `)
 
@@ -468,13 +469,13 @@ var _v3110OpenshiftSvcatControllerManagerRolebindingConfigmapAccessorYaml = []by
 kind: RoleBinding
 metadata:
   name: configmap-accessor-binding
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
 roleRef:
   kind: Role
   name: configmap-accessor
 subjects:
 - kind: ServiceAccount
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
   name: service-catalog-controller
 `)
 
@@ -497,7 +498,7 @@ var _v3110OpenshiftSvcatControllerManagerSaYaml = []byte(`kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: service-catalog-controller
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
 `)
 
 func v3110OpenshiftSvcatControllerManagerSaYamlBytes() ([]byte, error) {
@@ -519,7 +520,7 @@ var _v3110OpenshiftSvcatControllerManagerServicemonitorRoleYaml = []byte(`apiVer
 kind: Role
 metadata:
   name: prometheus-k8s
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
 rules:
 - apiGroups:
   - ""
@@ -552,7 +553,7 @@ var _v3110OpenshiftSvcatControllerManagerServicemonitorRolebindingYaml = []byte(
 kind: RoleBinding
 metadata:
   name: prometheus-k8s
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -581,7 +582,7 @@ func v3110OpenshiftSvcatControllerManagerServicemonitorRolebindingYaml() (*asset
 var _v3110OpenshiftSvcatControllerManagerSvcYaml = []byte(`apiVersion: v1
 kind: Service
 metadata:
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
   name: controller-manager
   annotations:
     service.alpha.openshift.io/serving-cert-secret-name: serving-cert

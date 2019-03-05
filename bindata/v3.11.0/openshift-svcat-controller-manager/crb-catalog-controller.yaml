@@ -8,4 +8,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: service-catalog-controller
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
