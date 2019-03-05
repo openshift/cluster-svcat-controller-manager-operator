@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  namespace: kube-service-catalog-controller-manager
+  namespace: openshift-service-catalog-controller-manager
   name: config
 data:
   config.yaml:
