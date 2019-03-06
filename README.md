@@ -50,12 +50,12 @@ NAME                        VERSION   AVAILABLE   PROGRESSING   FAILING   SINCE
 svcat-controller-manager              True        False         False     10m
 
 ```
-Review operator pod logs from the `openshift-svcat-controller-manager-operator` namespace to see details of the operator processing.
+Review operator pod logs from the `openshift-service-catalog-controller-manager-operator` namespace to see details of the operator processing.
 
 
 The operator deployment events will give you an overview of what it's done.  Ensure its not looping & review the events:
 ```
-$ oc describe deployment openshift-svcat-controller-manager-operator -n openshift-svcat-controller-manager-operator
+$ oc describe deployment openshift-service-catalog-controller-manager-operator -n openshift-service-catalog-controller-manager-operator
 ```
 
 
