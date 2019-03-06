@@ -81,6 +81,7 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 		return err
 	}
 	switch operatorConfig.Spec.ManagementState {
+	case operatorapiv1.Managed:
 	case operatorapiv1.Unmanaged:
 		// manage status
 		originalOperatorConfig := operatorConfig.DeepCopy()
@@ -116,6 +117,10 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 			return err
 		}
 		// TODO report that we are removing?
+		return nil
+
+	default:
+		c.recorder.Warningf("ManagementStateUnknown", "Unrecognized operator management state %q", operatorConfig.Spec.ManagementState)
 		return nil
 	}
 

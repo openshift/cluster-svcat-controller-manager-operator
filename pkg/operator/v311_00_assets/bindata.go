@@ -7,6 +7,7 @@
 // bindata/v3.11.0/openshift-svcat-controller-manager/defaultconfig.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/ds.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/ns.yaml
+// bindata/v3.11.0/openshift-svcat-controller-manager/operator-config.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/role-cluster-info-configmap.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/role-configmap-accessor.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/rolebinding-cluster-info-configmap.yaml
@@ -375,6 +376,30 @@ func v3110OpenshiftSvcatControllerManagerNsYaml() (*asset, error) {
 	return a, nil
 }
 
+var _v3110OpenshiftSvcatControllerManagerOperatorConfigYaml = []byte(`apiVersion: operator.openshift.io/v1
+kind: ServiceCatalogControllerManager
+metadata:
+  name: cluster
+spec:
+  logLevel: "Normal"
+  managementState: Removed
+`)
+
+func v3110OpenshiftSvcatControllerManagerOperatorConfigYamlBytes() ([]byte, error) {
+	return _v3110OpenshiftSvcatControllerManagerOperatorConfigYaml, nil
+}
+
+func v3110OpenshiftSvcatControllerManagerOperatorConfigYaml() (*asset, error) {
+	bytes, err := v3110OpenshiftSvcatControllerManagerOperatorConfigYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "v3.11.0/openshift-svcat-controller-manager/operator-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _v3110OpenshiftSvcatControllerManagerRoleClusterInfoConfigmapYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -671,6 +696,7 @@ var _bindata = map[string]func() (*asset, error){
 	"v3.11.0/openshift-svcat-controller-manager/defaultconfig.yaml":                           v3110OpenshiftSvcatControllerManagerDefaultconfigYaml,
 	"v3.11.0/openshift-svcat-controller-manager/ds.yaml":                                      v3110OpenshiftSvcatControllerManagerDsYaml,
 	"v3.11.0/openshift-svcat-controller-manager/ns.yaml":                                      v3110OpenshiftSvcatControllerManagerNsYaml,
+	"v3.11.0/openshift-svcat-controller-manager/operator-config.yaml":                         v3110OpenshiftSvcatControllerManagerOperatorConfigYaml,
 	"v3.11.0/openshift-svcat-controller-manager/role-cluster-info-configmap.yaml":             v3110OpenshiftSvcatControllerManagerRoleClusterInfoConfigmapYaml,
 	"v3.11.0/openshift-svcat-controller-manager/role-configmap-accessor.yaml":                 v3110OpenshiftSvcatControllerManagerRoleConfigmapAccessorYaml,
 	"v3.11.0/openshift-svcat-controller-manager/rolebinding-cluster-info-configmap.yaml":      v3110OpenshiftSvcatControllerManagerRolebindingClusterInfoConfigmapYaml,
@@ -731,6 +757,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"defaultconfig.yaml":                           {v3110OpenshiftSvcatControllerManagerDefaultconfigYaml, map[string]*bintree{}},
 			"ds.yaml":                                      {v3110OpenshiftSvcatControllerManagerDsYaml, map[string]*bintree{}},
 			"ns.yaml":                                      {v3110OpenshiftSvcatControllerManagerNsYaml, map[string]*bintree{}},
+			"operator-config.yaml":                         {v3110OpenshiftSvcatControllerManagerOperatorConfigYaml, map[string]*bintree{}},
 			"role-cluster-info-configmap.yaml":             {v3110OpenshiftSvcatControllerManagerRoleClusterInfoConfigmapYaml, map[string]*bintree{}},
 			"role-configmap-accessor.yaml":                 {v3110OpenshiftSvcatControllerManagerRoleConfigmapAccessorYaml, map[string]*bintree{}},
 			"rolebinding-cluster-info-configmap.yaml":      {v3110OpenshiftSvcatControllerManagerRolebindingClusterInfoConfigmapYaml, map[string]*bintree{}},
