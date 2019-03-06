@@ -52,7 +52,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 
 	operatorConfigInformers := operatorinformers.NewSharedInformerFactory(operatorclient, 10*time.Minute)
 	kubeInformersForServiceCatalogControllerManagerNamespace := informers.NewSharedInformerFactoryWithOptions(kubeClient, 10*time.Minute, informers.WithNamespace(targetNamespaceName))
-	kubeInformersForOperatorNamespace := informers.NewSharedInformerFactoryWithOptions(kubeClient, 10*time.Minute, informers.WithNamespace(util.OperatorNamespaceName))
+	kubeInformersForOperatorNamespace := informers.NewSharedInformerFactoryWithOptions(kubeClient, 10*time.Minute, informers.WithNamespace(util.OperatorNamespace))
 	configInformers := configinformers.NewSharedInformerFactory(configClient, 10*time.Minute)
 
 	operator := NewServiceCatalogControllerManagerOperator(
@@ -71,7 +71,11 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		"service-catalog-controller-manager",
-		[]configv1.ObjectReference{},
+		[]configv1.ObjectReference{
+			{Group: "operator.openshift.io", Resource: "servicecatalogcontrollermanagers", Name: "cluster"},
+			{Resource: "namespaces", Name: util.OperatorNamespace},
+			{Resource: "namespaces", Name: util.TargetNamespace},
+		},
 		configClient.ConfigV1(),
 		opClient,
 		status.NewVersionGetter(),
