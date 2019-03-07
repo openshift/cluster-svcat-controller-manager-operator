@@ -1,8 +1,8 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: openshift-svcat-controller-manager-operator
-  namespace: openshift-svcat-controller-manager-operator
+  name: openshift-service-catalog-controller-manager-operator
+  namespace: openshift-service-catalog-controller-manager-operator
 spec:
   endpoints:
   - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -16,11 +16,11 @@ spec:
     scheme: https
     tlsConfig:
       caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
-      serverName: metrics.openshift-svcat-controller-manager-operator.svc
+      serverName: metrics.openshift-service-catalog-controller-manager-operator.svc
   jobLabel: component
   namespaceSelector:
     matchNames:
-    - openshift-svcat-controller-manager-operator
+    - openshift-service-catalog-controller-manager-operator
   selector:
     matchLabels:
-      app: openshift-svcat-controller-manager-operator
+      app: openshift-service-catalog-controller-manager-operator

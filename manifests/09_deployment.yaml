@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: openshift-svcat-controller-manager-operator
-  name: openshift-svcat-controller-manager-operator
+  namespace: openshift-service-catalog-controller-manager-operator
+  name: openshift-service-catalog-controller-manager-operator
   labels:
-    app: openshift-svcat-controller-manager-operator
+    app: openshift-service-catalog-controller-manager-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: openshift-svcat-controller-manager-operator
+      app: openshift-service-catalog-controller-manager-operator
   template:
     metadata:
-      name: openshift-svcat-controller-manager-operator
+      name: openshift-service-catalog-controller-manager-operator
       labels:
-        app: openshift-svcat-controller-manager-operator
+        app: openshift-service-catalog-controller-manager-operator
     spec:
-      serviceAccountName: openshift-svcat-controller-manager-operator
+      serviceAccountName: openshift-service-catalog-controller-manager-operator
       containers:
       - name: operator
         image: registry.svc.ci.openshift.org/openshift/origin-v4.0:cluster-svcat-controller-manager-operator
@@ -49,12 +49,12 @@ spec:
       - name: serving-cert
         secret:
           defaultMode: 400
-          secretName: openshift-svcat-controller-manager-operator-serving-cert
+          secretName: openshift-service-catalog-controller-manager-operator-serving-cert
           optional: true
       - name: config
         configMap:
           defaultMode: 440
-          name: openshift-svcat-controller-manager-operator-config
+          name: openshift-service-catalog-controller-manager-operator-config
       nodeSelector:
         node-role.kubernetes.io/master: ""
       priorityClassName: "system-cluster-critical"
