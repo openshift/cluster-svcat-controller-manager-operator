@@ -2,6 +2,7 @@ package operator
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -22,6 +23,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 
 	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/operator/v311_00_assets"
+	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/util"
 )
 
 // syncServiceCatalogControllerManager_v311_00_to_latest takes care of synchronizing (not upgrading) the thing we're managing.
@@ -95,7 +97,11 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 			Message: "no daemon pods available on any node.",
 		})
 	}
-
+	if actualDaemonSet.Status.NumberAvailable > 0 && actualDaemonSet.Status.UpdatedNumberScheduled == actualDaemonSet.Status.CurrentNumberScheduled {
+		if len(actualDaemonSet.Annotations[util.VersionAnnotation]) > 0 {
+			operatorConfig.Status.Version = actualDaemonSet.Annotations[util.VersionAnnotation]
+		}
+	}
 	var progressingMessages []string
 	if actualDaemonSet != nil && actualDaemonSet.ObjectMeta.Generation != actualDaemonSet.Status.ObservedGeneration {
 		progressingMessages = append(progressingMessages, fmt.Sprintf("daemonset/controller-manager: observed generation is %d, desired generation is %d.", actualDaemonSet.Status.ObservedGeneration, actualDaemonSet.ObjectMeta.Generation))
@@ -199,6 +205,11 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(client ap
 		level = 3
 	}
 	required.Spec.Template.Spec.Containers[0].Args = append(required.Spec.Template.Spec.Containers[0].Args, fmt.Sprintf("-v=%d", level))
+
+	if required.Annotations == nil {
+		required.Annotations = map[string]string{}
+	}
+	required.Annotations[util.VersionAnnotation] = os.Getenv("RELEASE_VERSION")
 
 	return resourceapply.ApplyDaemonSet(client, recorder, required, resourcemerge.ExpectedDaemonSetGeneration(required, generationStatus), forceRollout)
 }

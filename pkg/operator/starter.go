@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
@@ -13,9 +14,10 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 
-	configv1client "github.com/openshift/client-go/config/clientset/versioned"
+	configclient "github.com/openshift/client-go/config/clientset/versioned"
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
 	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
+	operatorclientv1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	operatorinformers "github.com/openshift/client-go/operator/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/status"
@@ -35,7 +37,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 		return err
 	}
 
-	configClient, err := configv1client.NewForConfig(ctx.KubeConfig)
+	configClient, err := configclient.NewForConfig(ctx.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -69,6 +71,10 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 		client:    operatorclient.OperatorV1(),
 	}
 
+	versionGetter := &versionGetter{
+		servicecatalogControllerManagers: operatorclient.OperatorV1().ServiceCatalogControllerManagers(),
+		version: os.Getenv("RELEASE_VERSION"),
+	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		"service-catalog-controller-manager",
 		[]configv1.ObjectReference{
@@ -78,7 +84,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 		},
 		configClient.ConfigV1(),
 		opClient,
-		status.NewVersionGetter(),
+		versionGetter,
 		ctx.EventRecorder,
 	)
 
@@ -92,4 +98,29 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 
 	<-ctx.Done()
 	return fmt.Errorf("stopped")
+}
+
+type versionGetter struct {
+	servicecatalogControllerManagers operatorclientv1.ServiceCatalogControllerManagerInterface
+	version                          string
+}
+
+func (v *versionGetter) SetVersion(operandName, version string) {
+	// this versionGetter impl always gets the current version dynamically from operator config object status.
+}
+
+func (v *versionGetter) GetVersions() map[string]string {
+	co, err := v.servicecatalogControllerManagers.Get("cluster", metav1.GetOptions{})
+	if co == nil || err != nil {
+		return map[string]string{}
+	}
+	if len(co.Status.Version) > 0 {
+		return map[string]string{"operator": co.Status.Version}
+	}
+	return map[string]string{}
+}
+
+func (v *versionGetter) VersionChangedChannel() <-chan struct{} {
+	// this versionGetter never notifies of a version change, getVersion always returns the new version.
+	return make(chan struct{})
 }
