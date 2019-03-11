@@ -117,7 +117,31 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 		if err := c.kubeClient.CoreV1().Namespaces().Delete(targetNamespaceName, nil); err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
-		// TODO report that we are removing?
+		// manage status
+		originalOperatorConfig := operatorConfig.DeepCopy()
+		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
+			Type:    operatorapiv1.OperatorStatusTypeAvailable,
+			Status:  operatorapiv1.ConditionTrue,
+			Reason:  "Removed",
+			Message: "the controller manager is in Removed state.",
+		})
+		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
+			Type:    operatorapiv1.OperatorStatusTypeProgressing,
+			Status:  operatorapiv1.ConditionFalse,
+			Reason:  "Removed",
+			Message: "the controller manager is in Removed state.",
+		})
+		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
+			Type:    operatorapiv1.OperatorStatusTypeFailing,
+			Status:  operatorapiv1.ConditionFalse,
+			Reason:  "Removed",
+			Message: "the controller manager is in Removed state.",
+		})
+		if !equality.Semantic.DeepEqual(operatorConfig.Status, originalOperatorConfig.Status) {
+			if _, err := c.operatorConfigClient.ServiceCatalogControllerManagers().UpdateStatus(operatorConfig); err != nil {
+				return err
+			}
+		}
 		return nil
 
 	default:
