@@ -2,6 +2,7 @@ package operator
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang/glog"
@@ -113,11 +114,39 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 		return nil
 
 	case operatorapiv1.Removed:
-		// TODO probably need to watch until the NS is really gone
 		if err := c.kubeClient.CoreV1().Namespaces().Delete(targetNamespaceName, nil); err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
-		// TODO report that we are removing?
+
+		// Service Catalog is not initially installed, need to ensure the operator reports it is available
+		originalOperatorConfig := operatorConfig.DeepCopy()
+		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
+			Type:    operatorapiv1.OperatorStatusTypeAvailable,
+			Status:  operatorapiv1.ConditionTrue,
+			Reason:  "Removed",
+			Message: "",
+		})
+		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
+			Type:    operatorapiv1.OperatorStatusTypeProgressing,
+			Status:  operatorapiv1.ConditionFalse,
+			Reason:  "Removed",
+			Message: "",
+		})
+		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
+			Type:    operatorapiv1.OperatorStatusTypeFailing,
+			Status:  operatorapiv1.ConditionFalse,
+			Reason:  "Removed",
+			Message: "",
+		})
+
+		// The version must be reported even though the operand is not running
+		operatorConfig.Status.Version = os.Getenv("RELEASE_VERSION")
+
+		if !equality.Semantic.DeepEqual(operatorConfig.Status, originalOperatorConfig.Status) {
+			if _, err := c.operatorConfigClient.ServiceCatalogControllerManagers().UpdateStatus(operatorConfig); err != nil {
+				return err
+			}
+		}
 		return nil
 
 	default:
