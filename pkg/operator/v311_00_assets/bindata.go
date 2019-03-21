@@ -313,6 +313,26 @@ spec:
           name: client-ca
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
+        readinessProbe:
+          httpGet:
+            port: 6443
+            path: /healthz/ready
+            scheme: HTTPS
+          failureThreshold: 3
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        livenessProbe:
+          httpGet:
+            port: 6443
+            path: /healthz
+            scheme: HTTPS
+          failureThreshold: 3
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
       volumes:
       - name: apiserver-ssl
         secret:
