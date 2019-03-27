@@ -7,6 +7,13 @@ import (
 
 	"github.com/golang/glog"
 
+	operatorapiv1 "github.com/openshift/api/operator/v1"
+	operatorclientv1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
+	operatorinformersv1 "github.com/openshift/client-go/operator/informers/externalversions/operator/v1"
+	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/util"
+	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -14,18 +21,12 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/client-go/util/workqueue"
-
-	operatorapiv1 "github.com/openshift/api/operator/v1"
-	operatorclientv1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
-	operatorinformersv1 "github.com/openshift/client-go/operator/informers/externalversions/operator/v1"
-	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/util"
-	"github.com/openshift/library-go/pkg/operator/events"
-	"github.com/openshift/library-go/pkg/operator/v1helpers"
 )
 
 const (
@@ -39,7 +40,8 @@ type ServiceCatalogControllerManagerOperator struct {
 	targetImagePullSpec  string
 	operatorConfigClient operatorclientv1.OperatorV1Interface
 
-	kubeClient kubernetes.Interface
+	kubeClient    kubernetes.Interface
+	dynamicClient dynamic.Interface
 
 	// queue only ever has one item, but it has nice error handling backoff/retry semantics
 	queue workqueue.RateLimitingInterface
@@ -54,12 +56,14 @@ func NewServiceCatalogControllerManagerOperator(
 	kubeInformersForServiceCatalogControllerManager informers.SharedInformerFactory,
 	operatorConfigClient operatorclientv1.OperatorV1Interface,
 	kubeClient kubernetes.Interface,
+	dynamicClient dynamic.Interface,
 	recorder events.Recorder,
 ) *ServiceCatalogControllerManagerOperator {
 	c := &ServiceCatalogControllerManagerOperator{
 		targetImagePullSpec:  targetImagePullSpec,
 		operatorConfigClient: operatorConfigClient,
 		kubeClient:           kubeClient,
+		dynamicClient:        dynamicClient,
 		queue:                workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "KubeApiserverOperator"),
 		rateLimiter:          flowcontrol.NewTokenBucketRateLimiter(0.05 /*3 per minute*/, 4),
 		recorder:             recorder,

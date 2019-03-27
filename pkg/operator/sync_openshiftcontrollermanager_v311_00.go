@@ -60,6 +60,11 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 		}
 	}
 
+	_, err = resourceapply.ApplyServiceMonitor(c.dynamicClient, c.recorder, v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/servicemonitor.yaml"))
+	if err != nil {
+		errors = append(errors, fmt.Errorf("%q: %v", "servicemonitor", err))
+	}
+
 	_, configMapModified, err := manageServiceCatalogControllerManagerConfigMap_v311_00_to_latest(c.kubeClient, c.kubeClient.CoreV1(), c.recorder, operatorConfig)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("%q: %v", "configmap", err))

@@ -63,6 +63,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 		kubeInformersForServiceCatalogControllerManagerNamespace,
 		operatorclient.OperatorV1(),
 		kubeClient,
+		dynamicClient,
 		ctx.EventRecorder,
 	)
 
