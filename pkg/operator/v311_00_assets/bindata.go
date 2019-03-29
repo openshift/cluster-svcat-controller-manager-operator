@@ -15,6 +15,7 @@
 // bindata/v3.11.0/openshift-svcat-controller-manager/sa.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/servicemonitor-role.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/servicemonitor-rolebinding.yaml
+// bindata/v3.11.0/openshift-svcat-controller-manager/servicemonitor.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/svc.yaml
 // DO NOT EDIT!
 
@@ -379,7 +380,9 @@ kind: Namespace
 metadata:
   name: openshift-service-catalog-controller-manager
   labels:
-    openshift.io/run-level: "1"`)
+    openshift.io/run-level: "1"
+    openshift.io/cluster-monitoring: "true"
+`)
 
 func v3110OpenshiftSvcatControllerManagerNsYamlBytes() ([]byte, error) {
 	return _v3110OpenshiftSvcatControllerManagerNsYaml, nil
@@ -624,6 +627,41 @@ func v3110OpenshiftSvcatControllerManagerServicemonitorRolebindingYaml() (*asset
 	return a, nil
 }
 
+var _v3110OpenshiftSvcatControllerManagerServicemonitorYaml = []byte(`apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: servicemonitor
+  namespace: openshift-service-catalog-controller-manager
+spec:
+  endpoints:
+  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    interval: 30s
+    port: https
+    scheme: https
+    tlsConfig:
+      caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
+      serverName: controller-manager.openshift-service-catalog-controller-manager.svc
+  namespaceSelector:
+    matchNames:
+    - openshift-service-catalog-controller-manager
+  selector: {}
+`)
+
+func v3110OpenshiftSvcatControllerManagerServicemonitorYamlBytes() ([]byte, error) {
+	return _v3110OpenshiftSvcatControllerManagerServicemonitorYaml, nil
+}
+
+func v3110OpenshiftSvcatControllerManagerServicemonitorYaml() (*asset, error) {
+	bytes, err := v3110OpenshiftSvcatControllerManagerServicemonitorYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "v3.11.0/openshift-svcat-controller-manager/servicemonitor.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _v3110OpenshiftSvcatControllerManagerSvcYaml = []byte(`apiVersion: v1
 kind: Service
 metadata:
@@ -631,8 +669,6 @@ metadata:
   name: controller-manager
   annotations:
     service.alpha.openshift.io/serving-cert-secret-name: serving-cert
-    prometheus.io/scrape: "true"
-    prometheus.io/scheme: https
 spec:
   selector:
     controller-manager: "true"
@@ -724,6 +760,7 @@ var _bindata = map[string]func() (*asset, error){
 	"v3.11.0/openshift-svcat-controller-manager/sa.yaml":                                      v3110OpenshiftSvcatControllerManagerSaYaml,
 	"v3.11.0/openshift-svcat-controller-manager/servicemonitor-role.yaml":                     v3110OpenshiftSvcatControllerManagerServicemonitorRoleYaml,
 	"v3.11.0/openshift-svcat-controller-manager/servicemonitor-rolebinding.yaml":              v3110OpenshiftSvcatControllerManagerServicemonitorRolebindingYaml,
+	"v3.11.0/openshift-svcat-controller-manager/servicemonitor.yaml":                          v3110OpenshiftSvcatControllerManagerServicemonitorYaml,
 	"v3.11.0/openshift-svcat-controller-manager/svc.yaml":                                     v3110OpenshiftSvcatControllerManagerSvcYaml,
 }
 
@@ -785,6 +822,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"sa.yaml":                         {v3110OpenshiftSvcatControllerManagerSaYaml, map[string]*bintree{}},
 			"servicemonitor-role.yaml":        {v3110OpenshiftSvcatControllerManagerServicemonitorRoleYaml, map[string]*bintree{}},
 			"servicemonitor-rolebinding.yaml": {v3110OpenshiftSvcatControllerManagerServicemonitorRolebindingYaml, map[string]*bintree{}},
+			"servicemonitor.yaml":             {v3110OpenshiftSvcatControllerManagerServicemonitorYaml, map[string]*bintree{}},
 			"svc.yaml":                        {v3110OpenshiftSvcatControllerManagerSvcYaml, map[string]*bintree{}},
 		}},
 	}},
