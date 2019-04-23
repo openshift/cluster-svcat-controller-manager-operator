@@ -5,14 +5,8 @@ import (
 	"os"
 	"strings"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/client-go/kubernetes"
-	appsclientv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
-	coreclientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/operator/v311_00_assets"
+	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/util"
 
 	operatorapiv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -21,9 +15,14 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
-
-	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/operator/v311_00_assets"
-	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/util"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/kubernetes"
+	appsclientv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
+	coreclientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // syncServiceCatalogControllerManager_v311_00_to_latest takes care of synchronizing (not upgrading) the thing we're managing.
@@ -85,9 +84,6 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 		errors = append(errors, fmt.Errorf("%q: %v", "deployment", err))
 	}
 
-	operatorConfig.Status.ObservedGeneration = operatorConfig.ObjectMeta.Generation
-	resourcemerge.SetDaemonSetGeneration(&operatorConfig.Status.Generations, actualDaemonSet)
-
 	// manage status
 	if actualDaemonSet.Status.NumberAvailable > 0 {
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
@@ -112,7 +108,7 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 		progressingMessages = append(progressingMessages, fmt.Sprintf("daemonset/controller-manager: observed generation is %d, desired generation is %d.", actualDaemonSet.Status.ObservedGeneration, actualDaemonSet.ObjectMeta.Generation))
 	}
 	if operatorConfig.ObjectMeta.Generation != operatorConfig.Status.ObservedGeneration {
-		progressingMessages = append(progressingMessages, fmt.Sprintf("ServiceCatalogControllerManageroperatorconfigs/cluster: observed generation is %d, desired generation is %d.", operatorConfig.Status.ObservedGeneration, operatorConfig.ObjectMeta.Generation))
+		progressingMessages = append(progressingMessages, fmt.Sprintf("servicecatalogcontrollermanagers.operator.openshift.io/cluster: observed generation is %d, desired generation is %d.", operatorConfig.Status.ObservedGeneration, operatorConfig.ObjectMeta.Generation))
 	}
 	if len(progressingMessages) == 0 {
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
@@ -127,6 +123,9 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 			Message: strings.Join(progressingMessages, "\n"),
 		})
 	}
+
+	operatorConfig.Status.ObservedGeneration = operatorConfig.ObjectMeta.Generation
+	resourcemerge.SetDaemonSetGeneration(&operatorConfig.Status.Generations, actualDaemonSet)
 
 	if len(errors) > 0 {
 		message := ""
