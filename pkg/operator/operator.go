@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	operatorapiv1 "github.com/openshift/api/operator/v1"
 	operatorclientv1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
@@ -33,7 +33,7 @@ const (
 	kubeAPIServerNamespaceName = "openshift-kube-apiserver" // only used in sync_ServiceCatalogControllerManager_v311_00.go to copy the configmap
 	targetNamespaceName        = util.TargetNamespace
 	workQueueKey               = "key"
-	workloadFailingCondition   = "WorkloadFailing"
+	workloadDegradedCondition  = "WorkloadDegraded"
 )
 
 type ServiceCatalogControllerManagerOperator struct {
@@ -104,7 +104,7 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 			Message: "the controller manager is in an unmanaged state, therefore no changes are being applied.",
 		})
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
-			Type:    operatorapiv1.OperatorStatusTypeFailing,
+			Type:    operatorapiv1.OperatorStatusTypeDegraded,
 			Status:  operatorapiv1.ConditionFalse,
 			Reason:  "Unmanaged",
 			Message: "the controller manager is in an unmanaged state, therefore no operator actions are failing.",
@@ -137,7 +137,7 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 			Message: "",
 		})
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
-			Type:    operatorapiv1.OperatorStatusTypeFailing,
+			Type:    operatorapiv1.OperatorStatusTypeDegraded,
 			Status:  operatorapiv1.ConditionFalse,
 			Reason:  "Removed",
 			Message: "",
@@ -171,8 +171,8 @@ func (c *ServiceCatalogControllerManagerOperator) Run(workers int, stopCh <-chan
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
-	glog.Infof("Starting ServiceCatalogControllerManagerOperator")
-	defer glog.Infof("Shutting down ServiceCatalogControllerManagerOperator")
+	klog.Infof("Starting ServiceCatalogControllerManagerOperator")
+	defer klog.Infof("Shutting down ServiceCatalogControllerManagerOperator")
 
 	// doesn't matter what workers say, only start one.
 	go wait.Until(c.runWorker, time.Second, stopCh)

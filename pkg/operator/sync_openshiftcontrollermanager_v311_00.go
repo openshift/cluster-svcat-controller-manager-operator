@@ -134,14 +134,14 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 			message = message + err.Error() + "\n"
 		}
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
-			Type:    workloadFailingCondition,
+			Type:    workloadDegradedCondition,
 			Status:  operatorapiv1.ConditionTrue,
 			Message: message,
 			Reason:  "SyncError",
 		})
 	} else {
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
-			Type:   workloadFailingCondition,
+			Type:   workloadDegradedCondition,
 			Status: operatorapiv1.ConditionFalse,
 		})
 	}
@@ -210,7 +210,6 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(client ap
 		level = 3
 	}
 	required.Spec.Template.Spec.Containers[0].Args = append(required.Spec.Template.Spec.Containers[0].Args, fmt.Sprintf("-v=%d", level))
-
 	if required.Annotations == nil {
 		required.Annotations = map[string]string{}
 	}
