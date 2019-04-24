@@ -19,7 +19,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
@@ -215,9 +214,6 @@ func (c *ServiceCatalogControllerManagerOperator) eventHandler() cache.ResourceE
 		DeleteFunc: func(obj interface{}) { c.queue.Add(workQueueKey) },
 	}
 }
-
-// this set of namespaces will include things like logging and metrics which are used to drive
-var interestingNamespaces = sets.NewString(targetNamespaceName)
 
 func (c *ServiceCatalogControllerManagerOperator) namespaceEventHandler() cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerFuncs{

@@ -32,7 +32,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 	if err != nil {
 		return err
 	}
-	operatorclient, err := operatorclient.NewForConfig(ctx.KubeConfig)
+	operatorClient, err := operatorclient.NewForConfig(ctx.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 		schema.GroupVersionResource{Group: operatorv1.GroupName, Version: operatorv1.GroupVersion.Version, Resource: "servicecatalogcontrollermanagers"},
 	)
 
-	operatorConfigInformers := operatorinformers.NewSharedInformerFactory(operatorclient, 10*time.Minute)
+	operatorConfigInformers := operatorinformers.NewSharedInformerFactory(operatorClient, 10*time.Minute)
 	kubeInformersForServiceCatalogControllerManagerNamespace := informers.NewSharedInformerFactoryWithOptions(kubeClient, 10*time.Minute, informers.WithNamespace(targetNamespaceName))
 	kubeInformersForOperatorNamespace := informers.NewSharedInformerFactoryWithOptions(kubeClient, 10*time.Minute, informers.WithNamespace(util.OperatorNamespace))
 	configInformers := configinformers.NewSharedInformerFactory(configClient, 10*time.Minute)
@@ -61,19 +61,19 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 		os.Getenv("IMAGE"),
 		operatorConfigInformers.Operator().V1().ServiceCatalogControllerManagers(),
 		kubeInformersForServiceCatalogControllerManagerNamespace,
-		operatorclient.OperatorV1(),
+		operatorClient.OperatorV1(),
 		kubeClient,
 		dynamicClient,
 		ctx.EventRecorder,
 	)
 
-	opClient := &operatorClient{
+	opClient := &genericClient{
 		informers: operatorConfigInformers,
-		client:    operatorclient.OperatorV1(),
+		client:    operatorClient.OperatorV1(),
 	}
 
 	versionGetter := &versionGetter{
-		servicecatalogControllerManagers: operatorclient.OperatorV1().ServiceCatalogControllerManagers(),
+		servicecatalogControllerManagers: operatorClient.OperatorV1().ServiceCatalogControllerManagers(),
 		version: os.Getenv("RELEASE_VERSION"),
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
