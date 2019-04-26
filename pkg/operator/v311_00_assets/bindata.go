@@ -391,6 +391,8 @@ metadata:
   labels:
     openshift.io/run-level: "1"
     openshift.io/cluster-monitoring: "true"
+  annotations:
+    openshift.io/node-selector: ""
 `)
 
 func v3110OpenshiftSvcatControllerManagerNsYamlBytes() ([]byte, error) {
