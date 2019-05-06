@@ -287,6 +287,7 @@ spec:
       serviceAccountName: service-catalog-controller
       containers:
       - name: controller-manager
+        terminationMessagePolicy: FallbackToLogsOnError
         image: ${IMAGE}
         imagePullPolicy: IfNotPresent
         command: ["/usr/bin/service-catalog"]
