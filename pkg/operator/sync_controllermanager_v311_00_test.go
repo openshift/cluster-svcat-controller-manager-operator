@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	operatorfake "github.com/openshift/client-go/operator/clientset/versioned/fake"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -138,7 +139,7 @@ func TestProgressingCondition(t *testing.T) {
 				dynamicClient:        dynamicClient,
 			}
 
-			_, _ = syncServiceCatalogControllerManager_v311_00_to_latest(operator, operatorConfig)
+			_, _ = syncServiceCatalogControllerManager_v311_00_to_latest(operator, operatorConfig, &configv1.Proxy{})
 
 			result, err := controllerManagerOperatorClient.OperatorV1().ServiceCatalogControllerManagers().Get("cluster", metav1.GetOptions{})
 			if err != nil {
