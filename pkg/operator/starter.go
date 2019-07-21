@@ -6,13 +6,11 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
 	configv1 "github.com/openshift/api/config/v1"
-	operatorv1 "github.com/openshift/api/operator/v1"
 
 	configclient "github.com/openshift/client-go/config/clientset/versioned"
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
@@ -21,9 +19,7 @@ import (
 	operatorinformers "github.com/openshift/client-go/operator/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/status"
-	"github.com/openshift/library-go/pkg/operator/v1helpers"
 
-	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/operator/v311_00_assets"
 	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/util"
 )
 
@@ -45,12 +41,6 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 	if err != nil {
 		return err
 	}
-
-	v1helpers.EnsureOperatorConfigExists(
-		dynamicClient,
-		v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/operator-config.yaml"),
-		schema.GroupVersionResource{Group: operatorv1.GroupName, Version: operatorv1.GroupVersion.Version, Resource: "servicecatalogcontrollermanagers"},
-	)
 
 	operatorConfigInformers := operatorinformers.NewSharedInformerFactory(operatorClient, 10*time.Minute)
 	kubeInformersForServiceCatalogControllerManagerNamespace := informers.NewSharedInformerFactoryWithOptions(kubeClient, 10*time.Minute, informers.WithNamespace(targetNamespaceName))
@@ -74,7 +64,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 
 	versionGetter := &versionGetter{
 		servicecatalogControllerManagers: operatorClient.OperatorV1().ServiceCatalogControllerManagers(),
-		version: os.Getenv("RELEASE_VERSION"),
+		version:                          os.Getenv("RELEASE_VERSION"),
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		"service-catalog-controller-manager",
