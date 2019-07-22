@@ -25,3 +25,5 @@ import:
     version: master
   - package: k8s.io/gengo/args
     version: e17681d19d3ac4837a019ece36c2a0ec31ffe985
+  - package: github.com/prometheus/client_golang
+    version: 505eaef017263e299324067d40ca2c48f6a2cf50 #pinned to match library-go for now
