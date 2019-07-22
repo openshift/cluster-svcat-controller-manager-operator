@@ -74,7 +74,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 
 	versionGetter := &versionGetter{
 		servicecatalogControllerManagers: operatorClient.OperatorV1().ServiceCatalogControllerManagers(),
-		version: os.Getenv("RELEASE_VERSION"),
+		version:                          os.Getenv("RELEASE_VERSION"),
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		"service-catalog-controller-manager",
