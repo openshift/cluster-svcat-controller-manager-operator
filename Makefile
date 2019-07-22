@@ -6,7 +6,7 @@ GOFLAGS :=
 all: build build-image verify
 .PHONY: all
 build:
-	go build $(GOFLAGS) ./cmd/cluster-svcat-controller-manager-operator
+	GODEBUG=tls13=1 go build $(GOFLAGS) ./cmd/cluster-svcat-controller-manager-operator
 .PHONY: build
 
 image:
