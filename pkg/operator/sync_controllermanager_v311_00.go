@@ -86,19 +86,6 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 	forceRollout = forceRollout || operatorConfig.ObjectMeta.Generation != operatorConfig.Status.ObservedGeneration
 	forceRollout = forceRollout || configMapModified || clientCAModified
 
-	/*
-		// verify proxy config hasn't changed
-		klog.Errorf("http before %s after %s", proxyConfig.Spec.HTTPProxy, proxyConfig.Status.HTTPProxy)
-		klog.Errorf("https before %s after %s", proxyConfig.Spec.HTTPSProxy, proxyConfig.Status.HTTPSProxy)
-		klog.Errorf("noproxy before %s after %s", proxyConfig.Spec.NoProxy, proxyConfig.Status.NoProxy)
-
-		var foorollout bool
-		foorollout = foorollout || proxyConfig.Spec.HTTPProxy != proxyConfig.Status.HTTPProxy
-		foorollout = foorollout || proxyConfig.Spec.HTTPSProxy != proxyConfig.Status.HTTPSProxy
-		foorollout = foorollout || proxyConfig.Spec.NoProxy != proxyConfig.Status.NoProxy
-		klog.Errorf("forceRollout would be set to %v", foorollout)
-	*/
-
 	// our configmaps and secrets are in order, now it is time to create the DS
 	// TODO check basic preconditions here
 	actualDaemonSet, _, err := manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(c.kubeClient.AppsV1(), c.recorder, operatorConfig, c.targetImagePullSpec, operatorConfig.Status.Generations, forceRollout, proxyConfig)
