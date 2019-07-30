@@ -156,7 +156,11 @@ func TestProgressingCondition(t *testing.T) {
 				dynamicClient:        dynamicClient,
 			}
 
-			_, _ = syncServiceCatalogControllerManager_v311_00_to_latest(operator, operatorConfig, &configv1.Proxy{})
+			_, _ = syncServiceCatalogControllerManager_v311_00_to_latest(operator, operatorConfig, &configv1.Proxy{
+				Status: configv1.ProxyStatus{
+					HTTPProxy: "http://1.1.1.1:8080",
+				},
+			})
 
 			result, err := controllerManagerOperatorClient.OperatorV1().ServiceCatalogControllerManagers().Get("cluster", metav1.GetOptions{})
 			if err != nil {
@@ -172,6 +176,19 @@ func TestProgressingCondition(t *testing.T) {
 			}
 			if condition.Message != tc.expectedMessage {
 				t.Errorf("expected message:\n%v\nactual message:\n%v", tc.expectedMessage, condition.Message)
+			}
+
+			// verify proxy was set on daemonset
+			after, _ := kubeClient.AppsV1().DaemonSets("openshift-service-catalog-controller-manager").Get("controller-manager", metav1.GetOptions{})
+			proxyVar := ""
+			for _, envVar := range after.Spec.Template.Spec.Containers[0].Env {
+				switch envVar.Name {
+				case "HTTP_PROXY":
+					proxyVar = envVar.Value
+				}
+			}
+			if proxyVar != "http://1.1.1.1:8080" {
+				t.Fatalf("Proxy was not properly set expected http://1.1.1.1:8080")
 			}
 
 		})

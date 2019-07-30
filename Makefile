@@ -23,7 +23,7 @@ else
 ifeq (, $(shell which gotest2junit 2>/dev/null))
 $(error gotest2junit not found! Get it by `go get -u github.com/openshift/release/tools/gotest2junit`.)
 endif
-	GOCACHE=off go test $(GOFLAGS) -race -json ./... | gotest2junit > $(JUNITFILE)
+	go test $(GOFLAGS) -race -json ./... | gotest2junit > $(JUNITFILE)
 endif
 .PHONY: test-unit
 
