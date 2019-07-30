@@ -240,27 +240,27 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 				[]corev1.EnvVar{
 					{
 						Name:  httpProxyEnvVar,
-						Value: proxyConfig.Spec.HTTPProxy,
+						Value: proxyConfig.Status.HTTPProxy,
 					},
 					{
 						Name:  httpsProxyEnvVar,
-						Value: proxyConfig.Spec.HTTPSProxy,
+						Value: proxyConfig.Status.HTTPSProxy,
 					},
 					{
 						Name:  noProxyEnvVar,
-						Value: proxyConfig.Spec.NoProxy,
+						Value: proxyConfig.Status.NoProxy,
 					},
 					{
 						Name:  strings.ToLower(httpProxyEnvVar),
-						Value: proxyConfig.Spec.HTTPProxy,
+						Value: proxyConfig.Status.HTTPProxy,
 					},
 					{
 						Name:  strings.ToLower(httpsProxyEnvVar),
-						Value: proxyConfig.Spec.HTTPSProxy,
+						Value: proxyConfig.Status.HTTPSProxy,
 					},
 					{
 						Name:  strings.ToLower(noProxyEnvVar),
-						Value: proxyConfig.Spec.NoProxy,
+						Value: proxyConfig.Status.NoProxy,
 					},
 				}...)
 			// looks like this is the first time
@@ -279,19 +279,19 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 			for _, envVar := range existing.Spec.Template.Spec.Containers[0].Env {
 				switch envVar.Name {
 				case httpProxyEnvVar, strings.ToLower(httpProxyEnvVar):
-					forceRollout = forceRollout || proxyConfig.Spec.HTTPProxy != envVar.Value
-					if proxyConfig.Spec.HTTPProxy != envVar.Value {
-						klog.Infof("httpproxy [%s] != [%s]; forceRollout %v", proxyConfig.Spec.HTTPProxy, envVar.Value, forceRollout)
+					forceRollout = forceRollout || proxyConfig.Status.HTTPProxy != envVar.Value
+					if proxyConfig.Status.HTTPProxy != envVar.Value {
+						klog.Infof("httpproxy [%s] != [%s]; forceRollout %v", proxyConfig.Status.HTTPProxy, envVar.Value, forceRollout)
 					}
 				case httpsProxyEnvVar, strings.ToLower(httpsProxyEnvVar):
-					forceRollout = forceRollout || proxyConfig.Spec.HTTPSProxy != envVar.Value
-					if proxyConfig.Spec.HTTPSProxy != envVar.Value {
-						klog.Infof("httpsproxy [%s] != [%s]; forceRollout %v", proxyConfig.Spec.HTTPSProxy, envVar.Value, forceRollout)
+					forceRollout = forceRollout || proxyConfig.Status.HTTPSProxy != envVar.Value
+					if proxyConfig.Status.HTTPSProxy != envVar.Value {
+						klog.Infof("httpsproxy [%s] != [%s]; forceRollout %v", proxyConfig.Status.HTTPSProxy, envVar.Value, forceRollout)
 					}
 				case noProxyEnvVar, strings.ToLower(noProxyEnvVar):
-					forceRollout = forceRollout || proxyConfig.Spec.NoProxy != envVar.Value
-					if proxyConfig.Spec.NoProxy != envVar.Value {
-						klog.Infof("noproxy [%s] != [%s]; forceRollout %v", proxyConfig.Spec.NoProxy, envVar.Value, forceRollout)
+					forceRollout = forceRollout || proxyConfig.Status.NoProxy != envVar.Value
+					if proxyConfig.Status.NoProxy != envVar.Value {
+						klog.Infof("noproxy [%s] != [%s]; forceRollout %v", proxyConfig.Status.NoProxy, envVar.Value, forceRollout)
 					}
 				default:
 					klog.Infof("None of the cases matched. forceRollout: %v", forceRollout)
@@ -307,27 +307,27 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 					[]corev1.EnvVar{
 						{
 							Name:  httpProxyEnvVar,
-							Value: proxyConfig.Spec.HTTPProxy,
+							Value: proxyConfig.Status.HTTPProxy,
 						},
 						{
 							Name:  httpsProxyEnvVar,
-							Value: proxyConfig.Spec.HTTPSProxy,
+							Value: proxyConfig.Status.HTTPSProxy,
 						},
 						{
 							Name:  noProxyEnvVar,
-							Value: proxyConfig.Spec.NoProxy,
+							Value: proxyConfig.Status.NoProxy,
 						},
 						{
 							Name:  strings.ToLower(httpProxyEnvVar),
-							Value: proxyConfig.Spec.HTTPProxy,
+							Value: proxyConfig.Status.HTTPProxy,
 						},
 						{
 							Name:  strings.ToLower(httpsProxyEnvVar),
-							Value: proxyConfig.Spec.HTTPSProxy,
+							Value: proxyConfig.Status.HTTPSProxy,
 						},
 						{
 							Name:  strings.ToLower(noProxyEnvVar),
-							Value: proxyConfig.Spec.NoProxy,
+							Value: proxyConfig.Status.NoProxy,
 						},
 					}...)
 			}
@@ -374,8 +374,6 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 	}
 
 	// ================================================================
-
-	//klog.Infof("XXX managedSvcatCMDeployment: Env [%#v]", required.Spec.Template.Spec.Containers[0].Env)
 
 	required.Spec.Template.Spec.Containers[0].Args = append(required.Spec.Template.Spec.Containers[0].Args, fmt.Sprintf("-v=%d", level))
 	if required.Annotations == nil {
