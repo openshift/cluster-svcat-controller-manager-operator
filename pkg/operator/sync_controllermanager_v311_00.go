@@ -238,18 +238,16 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 		level = 4
 	}
 
-	// get the real daemonset so we can check to see if the proxy from the
-	// environment has changed or not.
-	existing, err := client.DaemonSets(required.Namespace).Get(required.Name, metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
-		// we probably don't want to create it, we just want to add the proxy
-		// stuff to the Env of required
-		// actual, err := client.DaemonSets(required.Namespace).Create(required)
-		// reportCreateEvent(recorder, required, err)
-		// return actual, true, err
-		klog.Errorf("XXX daemonset not found")
-		if proxyConfig != nil {
-			klog.Infof("XXX we have a proxy config, and no daemonset, adding config to required")
+	// ================================================================
+
+	var foundDaemonSet bool
+
+	if proxyConfig != nil {
+		existing, err := client.DaemonSets(required.Namespace).Get(required.Name, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			foundDaemonSet = false
+
+			klog.Errorf("XXX we have a proxyConfig, but no existing daemonset, updating environment")
 			// update the EnvVar
 			required.Spec.Template.Spec.Containers[0].Env = append(required.Spec.Template.Spec.Containers[0].Env,
 				[]corev1.EnvVar{
@@ -278,90 +276,111 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 						Value: proxyConfig.Spec.NoProxy,
 					},
 				}...)
+			// looks like this is the first time
 			forceRollout = true
+		} else if err != nil {
+			foundDaemonSet = false
+			klog.Error("XXX Problem getting daemonset")
+			return nil, false, err
+		} else if err == nil {
+			foundDaemonSet = true
 		}
-	} else if err != nil {
-		klog.Error("XXX Problem getting daemonset")
-		return nil, false, err
-	}
 
-	if proxyConfig == nil {
-		klog.Error("XXX proxyConfig is nil")
-	} else if proxyConfig != nil {
-		klog.Errorf("XXX proxyConfig is %v", proxyConfig)
-	}
-	klog.Errorf("XXX Environment length is %d", len(existing.Spec.Template.Spec.Containers[0].Env))
+		if foundDaemonSet {
+			// if we have any environments, loop to find the envvars
+			// if we detect a change, force the rollout
+			for _, envVar := range existing.Spec.Template.Spec.Containers[0].Env {
+				klog.Infof("XXX we have a proxyConfig and a daemonset, about to see if we have any changes")
+				switch envVar.Name {
+				case httpProxyEnvVar, strings.ToLower(httpProxyEnvVar):
+					forceRollout = forceRollout || proxyConfig.Spec.HTTPProxy != envVar.Value
+					klog.Infof("httpproxy %s != %s; forceRollout %v", proxyConfig.Spec.HTTPProxy, envVar.Value, forceRollout)
+				case httpsProxyEnvVar, strings.ToLower(httpsProxyEnvVar):
+					forceRollout = forceRollout || proxyConfig.Spec.HTTPSProxy != envVar.Value
+					klog.Infof("httpsproxy %s != %s; forceRollout %v", proxyConfig.Spec.HTTPSProxy, envVar.Value, forceRollout)
+				case noProxyEnvVar, strings.ToLower(noProxyEnvVar):
+					forceRollout = forceRollout || proxyConfig.Spec.NoProxy != envVar.Value
+					klog.Infof("noproxy %s != %s; forceRollout %v", proxyConfig.Spec.NoProxy, envVar.Value, forceRollout)
+				default:
+					klog.Infof("None of the cases matched. forceRollout: %v", forceRollout)
+				}
+			}
 
-	// if there's no proxyconfig, we want to replace the environment anyway
-	if proxyConfig == nil && len(existing.Spec.Template.Spec.Containers[0].Env) > 0 {
-		klog.Infof("XXX no proxyConfig, but environment exists, forcing rollout!")
-		required.Spec.Template.Spec.Containers[0].Env = append(required.Spec.Template.Spec.Containers[0].Env, []corev1.EnvVar{}...)
-		forceRollout = true
-	} else if proxyConfig == nil { // an no environment
-		// no environment, do nothing
-		klog.Infof("XXX no proxyConfig and no environment")
-	} else if proxyConfig != nil {
-		klog.Infof("XXX we have a proxyConfig")
-		klog.Infof("Proxy Config supplied, using %#v\n", proxyConfig)
-
-		// if we have any environments, loop to find the envvars
-		// if we detect a change, force the rollout
-		for _, envVar := range existing.Spec.Template.Spec.Containers[0].Env {
-			switch envVar.Name {
-			case httpProxyEnvVar, strings.ToLower(httpProxyEnvVar):
-				forceRollout = forceRollout || proxyConfig.Spec.HTTPProxy != envVar.Value
-				klog.Infof("proxy %s != %s; forceRollout %v", proxyConfig.Spec.HTTPProxy, envVar.Value, forceRollout)
-			case httpsProxyEnvVar, strings.ToLower(httpsProxyEnvVar):
-				forceRollout = forceRollout || proxyConfig.Spec.HTTPSProxy != envVar.Value
-				klog.Infof("proxy %s != %s; forceRollout %v", proxyConfig.Spec.HTTPSProxy, envVar.Value, forceRollout)
-			case noProxyEnvVar, strings.ToLower(noProxyEnvVar):
-				forceRollout = forceRollout || proxyConfig.Spec.NoProxy != envVar.Value
-				klog.Infof("proxy %s != %s; forceRollout %v", proxyConfig.Spec.NoProxy, envVar.Value, forceRollout)
-			default:
-				klog.Infof("None of the cases matched. forceRollout: %v", forceRollout)
+			// if we detected a change, forceRollout will be set, update
+			// environment
+			if forceRollout {
+				klog.Infof("XXX we have a proxyConfig and a daemonset, we detected a change in the env, updating required env")
+				// update the EnvVar
+				required.Spec.Template.Spec.Containers[0].Env = append(required.Spec.Template.Spec.Containers[0].Env,
+					[]corev1.EnvVar{
+						{
+							Name:  httpProxyEnvVar,
+							Value: proxyConfig.Spec.HTTPProxy,
+						},
+						{
+							Name:  httpsProxyEnvVar,
+							Value: proxyConfig.Spec.HTTPSProxy,
+						},
+						{
+							Name:  noProxyEnvVar,
+							Value: proxyConfig.Spec.NoProxy,
+						},
+						{
+							Name:  strings.ToLower(httpProxyEnvVar),
+							Value: proxyConfig.Spec.HTTPProxy,
+						},
+						{
+							Name:  strings.ToLower(httpsProxyEnvVar),
+							Value: proxyConfig.Spec.HTTPSProxy,
+						},
+						{
+							Name:  strings.ToLower(noProxyEnvVar),
+							Value: proxyConfig.Spec.NoProxy,
+						},
+					}...)
 			}
 		}
+	} else if proxyConfig == nil {
+		// use required, do not add environment, or make it empty
+		existing, err := client.DaemonSets(required.Namespace).Get(required.Name, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			// do nothing
+			foundDaemonSet = false
+		} else if err != nil {
+			foundDaemonSet = false
+			klog.Error("XXX Problem getting daemonset")
+			return nil, false, err
+		} else if err == nil {
+			foundDaemonSet = true
+		}
 
-		// if len(existing.Spec.Template.Spec.Containers[0].Env) < 1 {
-		//     klog.Infof("XXX no environment to update")
-		//     // no environment to update, see if the proxy has anything in it
-		//     forceRollout = forceRollout || proxyConfig.Spec.HTTPProxy != ""
-		//     forceRollout = forceRollout || proxyConfig.Spec.HTTPSProxy != ""
-		//     forceRollout = forceRollout || proxyConfig.Spec.NoProxy != ""
-		// }
+		// need to blank out EnvVar
+		if foundDaemonSet {
+			// see if there was a proxy that needs to get unset
+			for _, envVar := range existing.Spec.Template.Spec.Containers[0].Env {
+				klog.Infof("XXX we have no proxyConfig but we do have a daemonset, about to see if we have any changes")
+				switch envVar.Name {
+				case httpProxyEnvVar, strings.ToLower(httpProxyEnvVar),
+					httpsProxyEnvVar, strings.ToLower(httpsProxyEnvVar),
+					noProxyEnvVar, strings.ToLower(noProxyEnvVar):
 
-		if forceRollout {
-			klog.Infof("XXX we have a proxy config and are forcing the rollout")
-			// update the EnvVar
-			required.Spec.Template.Spec.Containers[0].Env = append(required.Spec.Template.Spec.Containers[0].Env,
-				[]corev1.EnvVar{
-					{
-						Name:  httpProxyEnvVar,
-						Value: proxyConfig.Spec.HTTPProxy,
-					},
-					{
-						Name:  httpsProxyEnvVar,
-						Value: proxyConfig.Spec.HTTPSProxy,
-					},
-					{
-						Name:  noProxyEnvVar,
-						Value: proxyConfig.Spec.NoProxy,
-					},
-					{
-						Name:  strings.ToLower(httpProxyEnvVar),
-						Value: proxyConfig.Spec.HTTPProxy,
-					},
-					{
-						Name:  strings.ToLower(httpsProxyEnvVar),
-						Value: proxyConfig.Spec.HTTPSProxy,
-					},
-					{
-						Name:  strings.ToLower(noProxyEnvVar),
-						Value: proxyConfig.Spec.NoProxy,
-					},
-				}...)
+					forceRollout = forceRollout || len(envVar.Value) > 0
+					klog.Infof("%s %s != ''; forceRollout %v", envVar.Name, envVar.Value, forceRollout)
+				default:
+					klog.Infof("None of the cases matched. forceRollout: %v", forceRollout)
+				}
+			}
+			// if we detected a change, forceRollout will be set, update
+			// environment
+			if forceRollout {
+				klog.Infof("XXX we have no proxyConfig but we do have a daemonset, we detected a change in the env, updating required env")
+				required.Spec.Template.Spec.Containers[0].Env = append(
+					required.Spec.Template.Spec.Containers[0].Env, []corev1.EnvVar{}...)
+			}
 		}
 	}
+
+	// ================================================================
 
 	klog.Infof("managedSvcatCMDeployment: Env [%#v]", required.Spec.Template.Spec.Containers[0].Env)
 
