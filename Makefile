@@ -28,7 +28,7 @@ endif
 .PHONY: test-unit
 
 test-e2e:
-	GOCACHE=off go test -v ./test/e2e/...
+	go test -v ./test/e2e/...
 .PHONY: test-e2e
 
 verify: verify-govet
