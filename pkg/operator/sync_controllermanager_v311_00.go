@@ -236,33 +236,8 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 
 			klog.Info("we have a proxyConfig, but no existing daemonset, updating environment")
 			// update the EnvVar
-			required.Spec.Template.Spec.Containers[0].Env = append(required.Spec.Template.Spec.Containers[0].Env,
-				[]corev1.EnvVar{
-					{
-						Name:  httpProxyEnvVar,
-						Value: proxyConfig.Status.HTTPProxy,
-					},
-					{
-						Name:  httpsProxyEnvVar,
-						Value: proxyConfig.Status.HTTPSProxy,
-					},
-					{
-						Name:  noProxyEnvVar,
-						Value: proxyConfig.Status.NoProxy,
-					},
-					{
-						Name:  strings.ToLower(httpProxyEnvVar),
-						Value: proxyConfig.Status.HTTPProxy,
-					},
-					{
-						Name:  strings.ToLower(httpsProxyEnvVar),
-						Value: proxyConfig.Status.HTTPSProxy,
-					},
-					{
-						Name:  strings.ToLower(noProxyEnvVar),
-						Value: proxyConfig.Status.NoProxy,
-					},
-				}...)
+			addProxyToEnvironment(required, proxyConfig)
+
 			// looks like this is the first time
 			forceRollout = true
 		} else if err != nil {
@@ -303,33 +278,7 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 			if forceRollout {
 				klog.Info("we have a proxyConfig and a daemonset, we detected a change in the env, updating required env")
 				// update the EnvVar
-				required.Spec.Template.Spec.Containers[0].Env = append(required.Spec.Template.Spec.Containers[0].Env,
-					[]corev1.EnvVar{
-						{
-							Name:  httpProxyEnvVar,
-							Value: proxyConfig.Status.HTTPProxy,
-						},
-						{
-							Name:  httpsProxyEnvVar,
-							Value: proxyConfig.Status.HTTPSProxy,
-						},
-						{
-							Name:  noProxyEnvVar,
-							Value: proxyConfig.Status.NoProxy,
-						},
-						{
-							Name:  strings.ToLower(httpProxyEnvVar),
-							Value: proxyConfig.Status.HTTPProxy,
-						},
-						{
-							Name:  strings.ToLower(httpsProxyEnvVar),
-							Value: proxyConfig.Status.HTTPSProxy,
-						},
-						{
-							Name:  strings.ToLower(noProxyEnvVar),
-							Value: proxyConfig.Status.NoProxy,
-						},
-					}...)
+				addProxyToEnvironment(required, proxyConfig)
 			}
 		}
 	} else if proxyConfig == nil {
@@ -382,4 +331,34 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 	required.Annotations[util.VersionAnnotation] = os.Getenv("RELEASE_VERSION")
 
 	return resourceapply.ApplyDaemonSet(client, recorder, required, resourcemerge.ExpectedDaemonSetGeneration(required, generationStatus), forceRollout)
+}
+
+func addProxyToEnvironment(required *appsv1.DaemonSet, proxyConfig *configv1.Proxy) {
+	required.Spec.Template.Spec.Containers[0].Env = append(required.Spec.Template.Spec.Containers[0].Env,
+		[]corev1.EnvVar{
+			{
+				Name:  httpProxyEnvVar,
+				Value: proxyConfig.Status.HTTPProxy,
+			},
+			{
+				Name:  httpsProxyEnvVar,
+				Value: proxyConfig.Status.HTTPSProxy,
+			},
+			{
+				Name:  noProxyEnvVar,
+				Value: proxyConfig.Status.NoProxy,
+			},
+			{
+				Name:  strings.ToLower(httpProxyEnvVar),
+				Value: proxyConfig.Status.HTTPProxy,
+			},
+			{
+				Name:  strings.ToLower(httpsProxyEnvVar),
+				Value: proxyConfig.Status.HTTPSProxy,
+			},
+			{
+				Name:  strings.ToLower(noProxyEnvVar),
+				Value: proxyConfig.Status.NoProxy,
+			},
+		}...)
 }
