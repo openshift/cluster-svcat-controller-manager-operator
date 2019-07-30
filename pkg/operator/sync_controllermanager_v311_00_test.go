@@ -106,6 +106,23 @@ func TestProgressingCondition(t *testing.T) {
 						Namespace:  "openshift-service-catalog-controller-manager",
 						Generation: tc.daemonSetGeneration,
 					},
+					Spec: appsv1.DaemonSetSpec{
+						Template: corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name: "fakeContainer",
+										Env: []corev1.EnvVar{
+											{
+												Name:  "HTTP_PROXY",
+												Value: "http://0.0.0.0:8080",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 					Status: appsv1.DaemonSetStatus{
 						NumberAvailable:    100,
 						ObservedGeneration: tc.daemonSetObservedGeneration,
