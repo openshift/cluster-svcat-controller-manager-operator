@@ -249,6 +249,11 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 		}
 
 		if foundDaemonSet {
+			if len(existing.Spec.Template.Spec.Containers) < 1 {
+				klog.Error("We have a proxyConfig, but the existing daemonset has no defined containers")
+				return nil, false, fmt.Errorf("the existing daemonset has no defined containers")
+			}
+
 			// if we have any environments, loop to find the envvars
 			// if we detect a change, force the rollout
 			for _, envVar := range existing.Spec.Template.Spec.Containers[0].Env {
@@ -297,6 +302,11 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 
 		// need to blank out EnvVar
 		if foundDaemonSet {
+			if len(existing.Spec.Template.Spec.Containers) < 1 {
+				klog.Error("We have no proxyConfig, but the existing daemonset has no defined containers")
+				return nil, false, fmt.Errorf("the existing daemonset has no defined containers")
+			}
+
 			// see if there was a proxy that needs to get unset
 			for _, envVar := range existing.Spec.Template.Spec.Containers[0].Env {
 				switch envVar.Name {
