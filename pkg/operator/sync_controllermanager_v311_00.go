@@ -222,7 +222,7 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 	case operatorapiv1.Debug:
 		level = 4
 	case operatorapiv1.Normal:
-		level = 4
+		level = 3
 	}
 
 	// ================================================================
