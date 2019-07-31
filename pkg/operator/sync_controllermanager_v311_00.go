@@ -326,8 +326,6 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 			// environment
 			if forceRollout {
 				klog.Info("we have no proxyConfig but we do have a daemonset, we detected a change in the env, updating required env")
-				required.Spec.Template.Spec.Containers[0].Env = append(
-					required.Spec.Template.Spec.Containers[0].Env, []corev1.EnvVar{}...)
 			}
 		}
 	}
