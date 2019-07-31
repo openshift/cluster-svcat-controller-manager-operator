@@ -8,6 +8,8 @@ import (
 	"k8s.io/klog"
 
 	operatorapiv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/client-go/config/clientset/versioned"
+	proxyinformersv1 "github.com/openshift/client-go/config/informers/externalversions/config/v1"
 	operatorclientv1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	operatorinformersv1 "github.com/openshift/client-go/operator/informers/externalversions/operator/v1"
 	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/util"
@@ -41,6 +43,7 @@ type ServiceCatalogControllerManagerOperator struct {
 
 	kubeClient    kubernetes.Interface
 	dynamicClient dynamic.Interface
+	configClient  versioned.Interface
 
 	// queue only ever has one item, but it has nice error handling backoff/retry semantics
 	queue workqueue.RateLimitingInterface
@@ -54,6 +57,8 @@ func NewServiceCatalogControllerManagerOperator(
 	operatorConfigInformer operatorinformersv1.ServiceCatalogControllerManagerInformer,
 	kubeInformersForServiceCatalogControllerManager informers.SharedInformerFactory,
 	operatorConfigClient operatorclientv1.OperatorV1Interface,
+	proxyInformer proxyinformersv1.ProxyInformer,
+	configClient versioned.Interface,
 	kubeClient kubernetes.Interface,
 	dynamicClient dynamic.Interface,
 	recorder events.Recorder,
@@ -63,6 +68,7 @@ func NewServiceCatalogControllerManagerOperator(
 		operatorConfigClient: operatorConfigClient,
 		kubeClient:           kubeClient,
 		dynamicClient:        dynamicClient,
+		configClient:         configClient,
 		queue:                workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "KubeApiserverOperator"),
 		rateLimiter:          flowcontrol.NewTokenBucketRateLimiter(0.05 /*3 per minute*/, 4),
 		recorder:             recorder,
@@ -77,6 +83,9 @@ func NewServiceCatalogControllerManagerOperator(
 	// we only watch some namespaces
 	kubeInformersForServiceCatalogControllerManager.Core().V1().Namespaces().Informer().AddEventHandler(c.namespaceEventHandler())
 
+	// get notified of proxy config changes
+	proxyInformer.Informer().AddEventHandler(c.eventHandler())
+
 	return c
 }
 
@@ -85,8 +94,21 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 	if err != nil {
 		return err
 	}
+
+	// get cluster proxy config
+	proxyConfig, err := c.configClient.ConfigV1().Proxies().Get("cluster", metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			klog.Info("No proxy config found, proceeding without a proxy config.")
+		} else {
+			return err
+		}
+	}
+
 	switch operatorConfig.Spec.ManagementState {
 	case operatorapiv1.Managed:
+		// redundant but it makes reading this switch later more clear
+		break
 	case operatorapiv1.Unmanaged:
 		// manage status
 		originalOperatorConfig := operatorConfig.DeepCopy()
@@ -157,7 +179,7 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 		return nil
 	}
 
-	forceRequeue, err := syncServiceCatalogControllerManager_v311_00_to_latest(c, operatorConfig)
+	forceRequeue, err := syncServiceCatalogControllerManager_v311_00_to_latest(c, operatorConfig, proxyConfig)
 	if forceRequeue && err != nil {
 		c.queue.AddRateLimited(workQueueKey)
 	}

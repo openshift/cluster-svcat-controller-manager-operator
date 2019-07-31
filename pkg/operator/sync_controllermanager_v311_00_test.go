@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	operatorfake "github.com/openshift/client-go/operator/clientset/versioned/fake"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -105,6 +106,23 @@ func TestProgressingCondition(t *testing.T) {
 						Namespace:  "openshift-service-catalog-controller-manager",
 						Generation: tc.daemonSetGeneration,
 					},
+					Spec: appsv1.DaemonSetSpec{
+						Template: corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name: "fakeContainer",
+										Env: []corev1.EnvVar{
+											{
+												Name:  "HTTP_PROXY",
+												Value: "http://0.0.0.0:8080",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 					Status: appsv1.DaemonSetStatus{
 						NumberAvailable:    100,
 						ObservedGeneration: tc.daemonSetObservedGeneration,
@@ -138,7 +156,11 @@ func TestProgressingCondition(t *testing.T) {
 				dynamicClient:        dynamicClient,
 			}
 
-			_, _ = syncServiceCatalogControllerManager_v311_00_to_latest(operator, operatorConfig)
+			_, _ = syncServiceCatalogControllerManager_v311_00_to_latest(operator, operatorConfig, &configv1.Proxy{
+				Status: configv1.ProxyStatus{
+					HTTPProxy: "http://1.1.1.1:8080",
+				},
+			})
 
 			result, err := controllerManagerOperatorClient.OperatorV1().ServiceCatalogControllerManagers().Get("cluster", metav1.GetOptions{})
 			if err != nil {
@@ -154,6 +176,19 @@ func TestProgressingCondition(t *testing.T) {
 			}
 			if condition.Message != tc.expectedMessage {
 				t.Errorf("expected message:\n%v\nactual message:\n%v", tc.expectedMessage, condition.Message)
+			}
+
+			// verify proxy was set on daemonset
+			after, _ := kubeClient.AppsV1().DaemonSets("openshift-service-catalog-controller-manager").Get("controller-manager", metav1.GetOptions{})
+			proxyVar := ""
+			for _, envVar := range after.Spec.Template.Spec.Containers[0].Env {
+				switch envVar.Name {
+				case "HTTP_PROXY":
+					proxyVar = envVar.Value
+				}
+			}
+			if proxyVar != "http://1.1.1.1:8080" {
+				t.Fatalf("Proxy was not properly set expected http://1.1.1.1:8080")
 			}
 
 		})

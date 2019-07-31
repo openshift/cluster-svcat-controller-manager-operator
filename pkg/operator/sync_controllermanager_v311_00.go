@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/operator/v311_00_assets"
 	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/util"
 
+	configv1 "github.com/openshift/api/config/v1"
 	operatorapiv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
@@ -18,16 +19,24 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	appsclientv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	coreclientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/klog"
+)
+
+const (
+	httpProxyEnvVar  = "HTTP_PROXY"
+	httpsProxyEnvVar = "HTTPS_PROXY"
+	noProxyEnvVar    = "NO_PROXY"
 )
 
 // syncServiceCatalogControllerManager_v311_00_to_latest takes care of synchronizing (not upgrading) the thing we're managing.
 // most of the time the sync method will be good for a large span of minor versions
-func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogControllerManagerOperator, originalOperatorConfig *operatorapiv1.ServiceCatalogControllerManager) (bool, error) {
+func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogControllerManagerOperator, originalOperatorConfig *operatorapiv1.ServiceCatalogControllerManager, proxyConfig *configv1.Proxy) (bool, error) {
 	errors := []error{}
 	var err error
 	operatorConfig := originalOperatorConfig.DeepCopy()
@@ -79,7 +88,7 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 
 	// our configmaps and secrets are in order, now it is time to create the DS
 	// TODO check basic preconditions here
-	actualDaemonSet, _, err := manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(c.kubeClient.AppsV1(), c.recorder, operatorConfig, c.targetImagePullSpec, operatorConfig.Status.Generations, forceRollout)
+	actualDaemonSet, _, err := manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(c.kubeClient.AppsV1(), c.recorder, operatorConfig, c.targetImagePullSpec, operatorConfig.Status.Generations, forceRollout, proxyConfig)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("%q: %v", "deployment", err))
 	}
@@ -167,6 +176,7 @@ func manageServiceCatalogControllerManagerClientCA_v311_00_to_latest(client core
 }
 
 func manageServiceCatalogControllerManagerConfigMap_v311_00_to_latest(kubeClient kubernetes.Interface, client coreclientv1.ConfigMapsGetter, recorder events.Recorder, operatorConfig *operatorapiv1.ServiceCatalogControllerManager) (*corev1.ConfigMap, bool, error) {
+
 	configMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/cm.yaml"))
 	defaultConfig := v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/defaultconfig.yaml")
 	requiredConfigMap, _, err := resourcemerge.MergeConfigMap(configMap, "config.yaml", nil, defaultConfig, operatorConfig.Spec.UnsupportedConfigOverrides.Raw, operatorConfig.Spec.ObservedConfig.Raw)
@@ -190,7 +200,13 @@ func manageServiceCatalogControllerManagerConfigMap_v311_00_to_latest(kubeClient
 	return resourceapply.ApplyConfigMap(client, recorder, requiredConfigMap)
 }
 
-func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(client appsclientv1.DaemonSetsGetter, recorder events.Recorder, options *operatorapiv1.ServiceCatalogControllerManager, imagePullSpec string, generationStatus []operatorapiv1.GenerationStatus, forceRollout bool) (*appsv1.DaemonSet, bool, error) {
+func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
+	client appsclientv1.DaemonSetsGetter, recorder events.Recorder,
+	options *operatorapiv1.ServiceCatalogControllerManager, imagePullSpec string,
+	generationStatus []operatorapiv1.GenerationStatus, forceRollout bool,
+	proxyConfig *configv1.Proxy) (*appsv1.DaemonSet, bool, error) {
+
+	// read the stock daemonset, this is NOT the live one
 	required := resourceread.ReadDaemonSetV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/ds.yaml"))
 
 	if len(imagePullSpec) > 0 {
@@ -208,6 +224,114 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(client ap
 	case operatorapiv1.Normal:
 		level = 3
 	}
+
+	// ================================================================
+
+	var foundDaemonSet bool
+
+	if proxyConfig != nil {
+		existing, err := client.DaemonSets(required.Namespace).Get(required.Name, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			foundDaemonSet = false
+
+			klog.Info("we have a proxyConfig, but no existing daemonset, updating environment")
+			// update the EnvVar
+			addProxyToEnvironment(required, proxyConfig)
+
+			// looks like this is the first time
+			forceRollout = true
+		} else if err != nil {
+			foundDaemonSet = false
+			klog.Error("Problem getting the daemonset, returning")
+			return nil, false, err
+		} else if err == nil {
+			foundDaemonSet = true
+		}
+
+		if foundDaemonSet {
+			if len(existing.Spec.Template.Spec.Containers) < 1 {
+				klog.Error("We have a proxyConfig, but the existing daemonset has no defined containers")
+				return nil, false, fmt.Errorf("the existing daemonset has no defined containers")
+			}
+
+			// if we have any environments, loop to find the envvars
+			// if we detect a change, force the rollout
+			for _, envVar := range existing.Spec.Template.Spec.Containers[0].Env {
+				switch envVar.Name {
+				case httpProxyEnvVar, strings.ToLower(httpProxyEnvVar):
+					forceRollout = forceRollout || proxyConfig.Status.HTTPProxy != envVar.Value
+					if proxyConfig.Status.HTTPProxy != envVar.Value {
+						klog.Infof("httpproxy [%s] != [%s]; forceRollout %v", proxyConfig.Status.HTTPProxy, envVar.Value, forceRollout)
+					}
+				case httpsProxyEnvVar, strings.ToLower(httpsProxyEnvVar):
+					forceRollout = forceRollout || proxyConfig.Status.HTTPSProxy != envVar.Value
+					if proxyConfig.Status.HTTPSProxy != envVar.Value {
+						klog.Infof("httpsproxy [%s] != [%s]; forceRollout %v", proxyConfig.Status.HTTPSProxy, envVar.Value, forceRollout)
+					}
+				case noProxyEnvVar, strings.ToLower(noProxyEnvVar):
+					forceRollout = forceRollout || proxyConfig.Status.NoProxy != envVar.Value
+					if proxyConfig.Status.NoProxy != envVar.Value {
+						klog.Infof("noproxy [%s] != [%s]; forceRollout %v", proxyConfig.Status.NoProxy, envVar.Value, forceRollout)
+					}
+				default:
+					klog.Infof("None of the cases matched. forceRollout: %v", forceRollout)
+				}
+			}
+
+			// if we detected a change, forceRollout will be set, update
+			// environment
+			if forceRollout {
+				klog.Info("we have a proxyConfig and a daemonset, we detected a change in the env, updating required env")
+				// update the EnvVar
+				addProxyToEnvironment(required, proxyConfig)
+			}
+		}
+	} else if proxyConfig == nil {
+		// use required, do not add environment, or make it empty
+		existing, err := client.DaemonSets(required.Namespace).Get(required.Name, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			// do nothing
+			foundDaemonSet = false
+		} else if err != nil {
+			foundDaemonSet = false
+			klog.Error("Problem getting the daemonset, returning")
+			return nil, false, err
+		} else if err == nil {
+			foundDaemonSet = true
+		}
+
+		// need to blank out EnvVar
+		if foundDaemonSet {
+			if len(existing.Spec.Template.Spec.Containers) < 1 {
+				klog.Error("We have no proxyConfig, but the existing daemonset has no defined containers")
+				return nil, false, fmt.Errorf("the existing daemonset has no defined containers")
+			}
+
+			// see if there was a proxy that needs to get unset
+			for _, envVar := range existing.Spec.Template.Spec.Containers[0].Env {
+				switch envVar.Name {
+				case httpProxyEnvVar, strings.ToLower(httpProxyEnvVar),
+					httpsProxyEnvVar, strings.ToLower(httpsProxyEnvVar),
+					noProxyEnvVar, strings.ToLower(noProxyEnvVar):
+
+					forceRollout = forceRollout || len(envVar.Value) > 0
+					if len(envVar.Value) > 0 {
+						klog.Infof("%s [%s] != ['']; forceRollout %v", envVar.Name, envVar.Value, forceRollout)
+					}
+				default:
+					klog.Infof("None of the cases matched. forceRollout unchanged: %v", forceRollout)
+				}
+			}
+			// if we detected a change, forceRollout will be set, update
+			// environment
+			if forceRollout {
+				klog.Info("we have no proxyConfig but we do have a daemonset, we detected a change in the env, updating required env")
+			}
+		}
+	}
+
+	// ================================================================
+
 	required.Spec.Template.Spec.Containers[0].Args = append(required.Spec.Template.Spec.Containers[0].Args, fmt.Sprintf("-v=%d", level))
 	if required.Annotations == nil {
 		required.Annotations = map[string]string{}
@@ -215,4 +339,34 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(client ap
 	required.Annotations[util.VersionAnnotation] = os.Getenv("RELEASE_VERSION")
 
 	return resourceapply.ApplyDaemonSet(client, recorder, required, resourcemerge.ExpectedDaemonSetGeneration(required, generationStatus), forceRollout)
+}
+
+func addProxyToEnvironment(required *appsv1.DaemonSet, proxyConfig *configv1.Proxy) {
+	required.Spec.Template.Spec.Containers[0].Env = append(required.Spec.Template.Spec.Containers[0].Env,
+		[]corev1.EnvVar{
+			{
+				Name:  httpProxyEnvVar,
+				Value: proxyConfig.Status.HTTPProxy,
+			},
+			{
+				Name:  httpsProxyEnvVar,
+				Value: proxyConfig.Status.HTTPSProxy,
+			},
+			{
+				Name:  noProxyEnvVar,
+				Value: proxyConfig.Status.NoProxy,
+			},
+			{
+				Name:  strings.ToLower(httpProxyEnvVar),
+				Value: proxyConfig.Status.HTTPProxy,
+			},
+			{
+				Name:  strings.ToLower(httpsProxyEnvVar),
+				Value: proxyConfig.Status.HTTPSProxy,
+			},
+			{
+				Name:  strings.ToLower(noProxyEnvVar),
+				Value: proxyConfig.Status.NoProxy,
+			},
+		}...)
 }
