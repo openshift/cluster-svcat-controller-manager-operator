@@ -77,6 +77,13 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 	if err != nil {
 		errors = append(errors, fmt.Errorf("%q: %v", "configmap", err))
 	}
+
+	// Handle the Trusted CA configmap
+	_, trustedCAModified, err := manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(c.kubeClient, c.kubeClient.CoreV1(), c.recorder, operatorConfig)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("%q: %v", "configmap", err))
+	}
+
 	// the kube-apiserver is the source of truth for client CA bundles
 	clientCAModified, err := manageServiceCatalogControllerManagerClientCA_v311_00_to_latest(c.kubeClient.CoreV1(), c.recorder)
 	if err != nil {
@@ -84,7 +91,7 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 	}
 
 	forceRollout = forceRollout || operatorConfig.ObjectMeta.Generation != operatorConfig.Status.ObservedGeneration
-	forceRollout = forceRollout || configMapModified || clientCAModified
+	forceRollout = forceRollout || configMapModified || clientCAModified || trustedCAModified
 
 	// our configmaps and secrets are in order, now it is time to create the DS
 	// TODO check basic preconditions here
@@ -196,6 +203,32 @@ func manageServiceCatalogControllerManagerConfigMap_v311_00_to_latest(kubeClient
 	for k, v := range inputHashes {
 		requiredConfigMap.Data[k] = v
 	}
+
+	return resourceapply.ApplyConfigMap(client, recorder, requiredConfigMap)
+}
+
+func manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(kubeClient kubernetes.Interface, client coreclientv1.ConfigMapsGetter, recorder events.Recorder, operatorConfig *operatorapiv1.ServiceCatalogControllerManager) (*corev1.ConfigMap, bool, error) {
+	// configMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/cm.yaml"))
+	requiredConfigMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml"))
+
+	// defaultConfig := v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/defaultconfig.yaml")
+	// requiredConfigMap, _, err := resourcemerge.MergeConfigMap(configMap, "config.yaml", nil, defaultConfig, operatorConfig.Spec.UnsupportedConfigOverrides.Raw, operatorConfig.Spec.ObservedConfig.Raw)
+	// if err != nil {
+	//     return nil, false, err
+	// }
+
+	// we can embed input hashes on our main configmap to drive rollouts when they change.
+	// inputHashes, err := resourcehash.MultipleObjectHashStringMapForObjectReferences(
+	//     kubeClient,
+	//     resourcehash.NewObjectRef().ForConfigMap().InNamespace(targetNamespaceName).Named("client-ca"),
+	//     resourcehash.NewObjectRef().ForSecret().InNamespace(targetNamespaceName).Named("serving-cert"),
+	// )
+	// if err != nil {
+	//     return nil, false, err
+	// }
+	// for k, v := range inputHashes {
+	//     requiredConfigMap.Data[k] = v
+	// }
 
 	return resourceapply.ApplyConfigMap(client, recorder, requiredConfigMap)
 }

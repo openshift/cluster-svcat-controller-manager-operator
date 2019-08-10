@@ -44,6 +44,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 	kubeInformersForServiceCatalogControllerManagerNamespace := informers.NewSharedInformerFactoryWithOptions(kubeClient, 10*time.Minute, informers.WithNamespace(targetNamespaceName))
 	kubeInformersForOperatorNamespace := informers.NewSharedInformerFactoryWithOptions(kubeClient, 10*time.Minute, informers.WithNamespace(util.OperatorNamespace))
 	configInformers := configinformers.NewSharedInformerFactory(configClient, 10*time.Minute)
+	configMapInformers := informers.NewSharedInformerFactoryWithOptions(kubeClient, 10*time.Minute, informers.WithNamespace(targetNamespaceName))
 
 	operator := NewServiceCatalogControllerManagerOperator(
 		os.Getenv("IMAGE"),
@@ -51,6 +52,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 		kubeInformersForServiceCatalogControllerManagerNamespace,
 		operatorClient.OperatorV1(),
 		configInformers.Config().V1().Proxies(),
+		configMapInformers.Core().V1().ConfigMaps(),
 		configClient,
 		kubeClient,
 		dynamicClient,
@@ -84,6 +86,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 	kubeInformersForServiceCatalogControllerManagerNamespace.Start(ctx.Done())
 	kubeInformersForOperatorNamespace.Start(ctx.Done())
 	configInformers.Start(ctx.Done())
+	configMapInformers.Start(ctx.Done())
 
 	go operator.Run(1, ctx.Done())
 	go clusterOperatorStatus.Run(1, ctx.Done())
