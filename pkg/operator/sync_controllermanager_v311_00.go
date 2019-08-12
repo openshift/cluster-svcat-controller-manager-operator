@@ -208,29 +208,39 @@ func manageServiceCatalogControllerManagerConfigMap_v311_00_to_latest(kubeClient
 }
 
 func manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(kubeClient kubernetes.Interface, client coreclientv1.ConfigMapsGetter, recorder events.Recorder, operatorConfig *operatorapiv1.ServiceCatalogControllerManager) (*corev1.ConfigMap, bool, error) {
-	// configMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/cm.yaml"))
-	requiredConfigMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml"))
+	trustedCAConfigMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml"))
 
-	// defaultConfig := v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/defaultconfig.yaml")
-	// requiredConfigMap, _, err := resourcemerge.MergeConfigMap(configMap, "config.yaml", nil, defaultConfig, operatorConfig.Spec.UnsupportedConfigOverrides.Raw, operatorConfig.Spec.ObservedConfig.Raw)
-	// if err != nil {
+	// See if the trusted-ca-bundle configmap exists. If it does, see if the
+	// ca-bundle.crt exists. And see if the generation changed
+	/*
+			apiVersion: v1
+		kind: ConfigMap
+		metadata:
+		  namespace: openshift-service-catalog-controller-manager
+		  name: trusted-ca-bundle
+		  annotations:
+		    config.openshift.io/inject-trusted-cabundle: "true"
+		data:
+		  ca-bundle.crt:
+
+	*/
+	// trustedCAConfigMapFound := true
+	currentTrustedCAConfigMap, err := client.ConfigMaps(targetNamespaceName).Get("trusted-ca-bundle", metav1.GetOptions{})
+	// if apierrors.IsNotFound(err) {
+	//     klog.Info("trusted-ca-bundle configmap not found, most likely needs to get created during reconcile")
+	//     trustedCAConfigMapFound := false
+	// } else if err != nil {
 	//     return nil, false, err
 	// }
+	if err != nil {
+		return nil, false, err
+	}
+	requiredTrustedCAConfigMap, _, err := resourcemerge.MergeConfigMap(trustedCAConfigMap, "trusted-ca-bundle", nil, []byte(currentTrustedCAConfigMap.Data["ca-bundle.crt"]))
+	if err != nil {
+		return nil, false, err
+	}
 
-	// we can embed input hashes on our main configmap to drive rollouts when they change.
-	// inputHashes, err := resourcehash.MultipleObjectHashStringMapForObjectReferences(
-	//     kubeClient,
-	//     resourcehash.NewObjectRef().ForConfigMap().InNamespace(targetNamespaceName).Named("client-ca"),
-	//     resourcehash.NewObjectRef().ForSecret().InNamespace(targetNamespaceName).Named("serving-cert"),
-	// )
-	// if err != nil {
-	//     return nil, false, err
-	// }
-	// for k, v := range inputHashes {
-	//     requiredConfigMap.Data[k] = v
-	// }
-
-	return resourceapply.ApplyConfigMap(client, recorder, requiredConfigMap)
+	return resourceapply.ApplyConfigMap(client, recorder, requiredTrustedCAConfigMap)
 }
 
 func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
