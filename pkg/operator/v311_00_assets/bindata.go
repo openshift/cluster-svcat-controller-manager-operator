@@ -686,7 +686,7 @@ kind: ConfigMap
 metadata:
   namespace: openshift-service-catalog-controller-manager
   name: trusted-ca-bundle
-  annotations:
+  labels:
     config.openshift.io/inject-trusted-cabundle: "true"
 data:
   ca-bundle.crt:
