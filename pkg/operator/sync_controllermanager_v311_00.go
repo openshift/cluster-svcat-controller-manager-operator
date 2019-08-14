@@ -210,31 +210,11 @@ func manageServiceCatalogControllerManagerConfigMap_v311_00_to_latest(kubeClient
 func manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(kubeClient kubernetes.Interface, client coreclientv1.ConfigMapsGetter, recorder events.Recorder, operatorConfig *operatorapiv1.ServiceCatalogControllerManager) (*corev1.ConfigMap, bool, error) {
 	trustedCAConfigMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml"))
 
-	// See if the trusted-ca-bundle configmap exists. If it does, see if the
-	// ca-bundle.crt exists. And see if the generation changed
-	/*
-			apiVersion: v1
-		kind: ConfigMap
-		metadata:
-		  namespace: openshift-service-catalog-controller-manager
-		  name: trusted-ca-bundle
-		  annotations:
-		    config.openshift.io/inject-trusted-cabundle: "true"
-		data:
-		  ca-bundle.crt:
-
-	*/
-	// trustedCAConfigMapFound := true
 	currentTrustedCAConfigMap, err := client.ConfigMaps(targetNamespaceName).Get("trusted-ca-bundle", metav1.GetOptions{})
-	// if apierrors.IsNotFound(err) {
-	//     klog.Info("trusted-ca-bundle configmap not found, most likely needs to get created during reconcile")
-	//     trustedCAConfigMapFound := false
-	// } else if err != nil {
-	//     return nil, false, err
-	// }
 	if err != nil {
 		return nil, false, err
 	}
+
 	requiredTrustedCAConfigMap, _, err := resourcemerge.MergeConfigMap(trustedCAConfigMap, "trusted-ca-bundle", nil, []byte(currentTrustedCAConfigMap.Data["ca-bundle.crt"]))
 	if err != nil {
 		return nil, false, err
