@@ -95,7 +95,7 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 
 	// our configmaps and secrets are in order, now it is time to create the DS
 	// TODO check basic preconditions here
-	actualDaemonSet, _, err := manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(c.kubeClient.AppsV1(), c.recorder, operatorConfig, c.targetImagePullSpec, operatorConfig.Status.Generations, forceRollout, proxyConfig)
+	actualDaemonSet, _, err := manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(c.kubeClient.AppsV1(), c.recorder, operatorConfig, c.targetImagePullSpec, operatorConfig.Status.Generations, forceRollout, proxyConfig, trustedCAModified)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("%q: %v", "deployment", err))
 	}
@@ -247,7 +247,7 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 	client appsclientv1.DaemonSetsGetter, recorder events.Recorder,
 	options *operatorapiv1.ServiceCatalogControllerManager, imagePullSpec string,
 	generationStatus []operatorapiv1.GenerationStatus, forceRollout bool,
-	proxyConfig *configv1.Proxy) (*appsv1.DaemonSet, bool, error) {
+	proxyConfig *configv1.Proxy, trustedCAModified bool) (*appsv1.DaemonSet, bool, error) {
 
 	// read the stock daemonset, this is NOT the live one
 	required := resourceread.ReadDaemonSetV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/ds.yaml"))
@@ -266,6 +266,11 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 		level = 4
 	case operatorapiv1.Normal:
 		level = 3
+	}
+
+	// if trustedCAModified we should add a mount point to the daemonset
+	if trustedCAModified {
+		addVolumeToDaemonSet(required)
 	}
 
 	// ================================================================
@@ -382,6 +387,34 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 	required.Annotations[util.VersionAnnotation] = os.Getenv("RELEASE_VERSION")
 
 	return resourceapply.ApplyDaemonSet(client, recorder, required, resourcemerge.ExpectedDaemonSetGeneration(required, generationStatus), forceRollout)
+}
+
+func addVolumeToDaemonSet(required *appsv1.DaemonSet) {
+	// volumes:
+	//   - name: config-volume
+	//     configMap:
+	//       name: trusted-ca-bundle
+	//       items:
+	//       - key: ca-bundle.crt
+	//         path: "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+
+	required.Spec.Template.Spec.Volumes = append(required.Spec.Template.Spec.Volumes,
+		corev1.Volume{
+			Name: "config-volume",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "trusted-ca-bundle",
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  "ca-bundle.crt",
+							Path: "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
+						},
+					},
+				},
+			},
+		})
 }
 
 func addProxyToEnvironment(required *appsv1.DaemonSet, proxyConfig *configv1.Proxy) {

@@ -324,6 +324,8 @@ spec:
           name: client-ca
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
+        - mountPath: /etc/pki/ca-trust/extracted/pem/
+          name: trusted-ca-bundle
         readinessProbe:
           httpGet:
             port: 6443
