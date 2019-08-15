@@ -370,18 +370,29 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 }
 
 func addVolumeToDaemonSet(required *appsv1.DaemonSet) {
+	// volumeMount:
+	//   - mountPath: /etc/pki/ca-trust/extracted/pem/
+	//     name: trusted-ca-bundle
 	// volumes:
-	//   - name: config-volume
+	//   - name: trusted-ca-bundle
 	//     configMap:
 	//       name: trusted-ca-bundle
 	//       items:
 	//       - key: ca-bundle.crt
-	//         path: "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+	//         path: "tls-ca-bundle.pem"
+
+	required.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+		required.Spec.Template.Spec.Containers[0].VolumeMounts,
+
+		corev1.VolumeMount{
+			Name:      "trusted-ca-bundle",
+			MountPath: "/etc/pki/ca-trust/extracted/pem/",
+		})
 
 	optionalVolume := true
 	required.Spec.Template.Spec.Volumes = append(required.Spec.Template.Spec.Volumes,
 		corev1.Volume{
-			Name: "config-volume",
+			Name: "trusted-ca-bundle",
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{
@@ -390,7 +401,7 @@ func addVolumeToDaemonSet(required *appsv1.DaemonSet) {
 					Items: []corev1.KeyToPath{
 						{
 							Key:  "ca-bundle.crt",
-							Path: "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
+							Path: "tls-ca-bundle.pem",
 						},
 					},
 					Optional: &optionalVolume,
