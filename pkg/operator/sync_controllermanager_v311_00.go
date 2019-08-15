@@ -32,6 +32,7 @@ const (
 	httpProxyEnvVar  = "HTTP_PROXY"
 	httpsProxyEnvVar = "HTTPS_PROXY"
 	noProxyEnvVar    = "NO_PROXY"
+	trustedCABundle  = "trusted-ca-bundle"
 )
 
 // syncServiceCatalogControllerManager_v311_00_to_latest takes care of synchronizing (not upgrading) the thing we're managing.
@@ -210,12 +211,12 @@ func manageServiceCatalogControllerManagerConfigMap_v311_00_to_latest(kubeClient
 func manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(kubeClient kubernetes.Interface, client coreclientv1.ConfigMapsGetter, recorder events.Recorder, operatorConfig *operatorapiv1.ServiceCatalogControllerManager) (*corev1.ConfigMap, bool, error) {
 	trustedCAConfigMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml"))
 
-	currentTrustedCAConfigMap, err := client.ConfigMaps(targetNamespaceName).Get("trusted-ca-bundle", metav1.GetOptions{})
+	currentTrustedCAConfigMap, err := client.ConfigMaps(targetNamespaceName).Get(trustedCABundle, metav1.GetOptions{})
 	if err != nil {
 		return nil, false, err
 	}
 
-	requiredTrustedCAConfigMap, _, err := resourcemerge.MergeConfigMap(trustedCAConfigMap, "trusted-ca-bundle", nil, []byte(currentTrustedCAConfigMap.Data["ca-bundle.crt"]))
+	requiredTrustedCAConfigMap, _, err := resourcemerge.MergeConfigMap(trustedCAConfigMap, trustedCABundle, nil, []byte(currentTrustedCAConfigMap.Data["ca-bundle.crt"]))
 	if err != nil {
 		return nil, false, err
 	}
@@ -385,18 +386,18 @@ func addTrustedCAVolumeToDaemonSet(required *appsv1.DaemonSet) {
 		required.Spec.Template.Spec.Containers[0].VolumeMounts,
 
 		corev1.VolumeMount{
-			Name:      "trusted-ca-bundle",
+			Name:      trustedCABundle,
 			MountPath: "/etc/pki/ca-trust/extracted/pem/",
 		})
 
 	optionalVolume := true
 	required.Spec.Template.Spec.Volumes = append(required.Spec.Template.Spec.Volumes,
 		corev1.Volume{
-			Name: "trusted-ca-bundle",
+			Name: trustedCABundle,
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "trusted-ca-bundle",
+						Name: trustedCABundle,
 					},
 					Items: []corev1.KeyToPath{
 						{
