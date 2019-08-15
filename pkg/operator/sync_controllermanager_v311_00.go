@@ -378,6 +378,7 @@ func addVolumeToDaemonSet(required *appsv1.DaemonSet) {
 	//       - key: ca-bundle.crt
 	//         path: "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
 
+	optionalVolume := true
 	required.Spec.Template.Spec.Volumes = append(required.Spec.Template.Spec.Volumes,
 		corev1.Volume{
 			Name: "config-volume",
@@ -392,6 +393,7 @@ func addVolumeToDaemonSet(required *appsv1.DaemonSet) {
 							Path: "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
 						},
 					},
+					Optional: &optionalVolume,
 				},
 			},
 		})
