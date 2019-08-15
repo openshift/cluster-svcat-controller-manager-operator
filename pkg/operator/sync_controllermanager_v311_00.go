@@ -212,7 +212,9 @@ func manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(k
 	trustedCAConfigMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml"))
 
 	currentTrustedCAConfigMap, err := client.ConfigMaps(targetNamespaceName).Get(trustedCABundle, metav1.GetOptions{})
-	if err != nil {
+	if apierrors.IsNotFound(err) {
+		return nil, false, nil
+	} else if err != nil {
 		return nil, false, err
 	}
 
