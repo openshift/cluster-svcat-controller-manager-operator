@@ -250,7 +250,7 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 
 	// if trustedCAModified we should add a mount point to the daemonset
 	if trustedCAModified {
-		addVolumeToDaemonSet(required)
+		addTrustedCAVolumeToDaemonSet(required)
 	}
 
 	// ================================================================
@@ -369,7 +369,7 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 	return resourceapply.ApplyDaemonSet(client, recorder, required, resourcemerge.ExpectedDaemonSetGeneration(required, generationStatus), forceRollout)
 }
 
-func addVolumeToDaemonSet(required *appsv1.DaemonSet) {
+func addTrustedCAVolumeToDaemonSet(required *appsv1.DaemonSet) {
 	// volumeMount:
 	//   - mountPath: /etc/pki/ca-trust/extracted/pem/
 	//     name: trusted-ca-bundle
