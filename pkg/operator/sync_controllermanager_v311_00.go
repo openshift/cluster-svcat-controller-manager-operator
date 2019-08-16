@@ -32,6 +32,7 @@ const (
 	httpProxyEnvVar  = "HTTP_PROXY"
 	httpsProxyEnvVar = "HTTPS_PROXY"
 	noProxyEnvVar    = "NO_PROXY"
+	trustedCABundle  = "trusted-ca-bundle"
 )
 
 // syncServiceCatalogControllerManager_v311_00_to_latest takes care of synchronizing (not upgrading) the thing we're managing.
@@ -77,6 +78,13 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 	if err != nil {
 		errors = append(errors, fmt.Errorf("%q: %v", "configmap", err))
 	}
+
+	// Handle the Trusted CA configmap
+	_, trustedCAModified, err := manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(c.kubeClient, c.kubeClient.CoreV1(), c.recorder, operatorConfig)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("%q: %v", "configmap", err))
+	}
+
 	// the kube-apiserver is the source of truth for client CA bundles
 	clientCAModified, err := manageServiceCatalogControllerManagerClientCA_v311_00_to_latest(c.kubeClient.CoreV1(), c.recorder)
 	if err != nil {
@@ -84,11 +92,11 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 	}
 
 	forceRollout = forceRollout || operatorConfig.ObjectMeta.Generation != operatorConfig.Status.ObservedGeneration
-	forceRollout = forceRollout || configMapModified || clientCAModified
+	forceRollout = forceRollout || configMapModified || clientCAModified || trustedCAModified
 
 	// our configmaps and secrets are in order, now it is time to create the DS
 	// TODO check basic preconditions here
-	actualDaemonSet, _, err := manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(c.kubeClient.AppsV1(), c.recorder, operatorConfig, c.targetImagePullSpec, operatorConfig.Status.Generations, forceRollout, proxyConfig)
+	actualDaemonSet, _, err := manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(c.kubeClient.AppsV1(), c.recorder, operatorConfig, c.targetImagePullSpec, operatorConfig.Status.Generations, forceRollout, proxyConfig, trustedCAModified)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("%q: %v", "deployment", err))
 	}
@@ -200,11 +208,29 @@ func manageServiceCatalogControllerManagerConfigMap_v311_00_to_latest(kubeClient
 	return resourceapply.ApplyConfigMap(client, recorder, requiredConfigMap)
 }
 
+func manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(kubeClient kubernetes.Interface, client coreclientv1.ConfigMapsGetter, recorder events.Recorder, operatorConfig *operatorapiv1.ServiceCatalogControllerManager) (*corev1.ConfigMap, bool, error) {
+	trustedCAConfigMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml"))
+
+	currentTrustedCAConfigMap, err := client.ConfigMaps(targetNamespaceName).Get(trustedCABundle, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, err
+	}
+
+	requiredTrustedCAConfigMap, _, err := resourcemerge.MergeConfigMap(trustedCAConfigMap, trustedCABundle, nil, []byte(currentTrustedCAConfigMap.Data["ca-bundle.crt"]))
+	if err != nil {
+		return nil, false, err
+	}
+
+	return resourceapply.ApplyConfigMap(client, recorder, requiredTrustedCAConfigMap)
+}
+
 func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 	client appsclientv1.DaemonSetsGetter, recorder events.Recorder,
 	options *operatorapiv1.ServiceCatalogControllerManager, imagePullSpec string,
 	generationStatus []operatorapiv1.GenerationStatus, forceRollout bool,
-	proxyConfig *configv1.Proxy) (*appsv1.DaemonSet, bool, error) {
+	proxyConfig *configv1.Proxy, trustedCAModified bool) (*appsv1.DaemonSet, bool, error) {
 
 	// read the stock daemonset, this is NOT the live one
 	required := resourceread.ReadDaemonSetV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/ds.yaml"))
@@ -223,6 +249,11 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 		level = 4
 	case operatorapiv1.Normal:
 		level = 3
+	}
+
+	// if trustedCAModified we should add a mount point to the daemonset
+	if trustedCAModified {
+		addTrustedCAVolumeToDaemonSet(required)
 	}
 
 	// ================================================================
@@ -339,6 +370,47 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 	required.Annotations[util.VersionAnnotation] = os.Getenv("RELEASE_VERSION")
 
 	return resourceapply.ApplyDaemonSet(client, recorder, required, resourcemerge.ExpectedDaemonSetGeneration(required, generationStatus), forceRollout)
+}
+
+func addTrustedCAVolumeToDaemonSet(required *appsv1.DaemonSet) {
+	// volumeMount:
+	//   - mountPath: /etc/pki/ca-trust/extracted/pem/
+	//     name: trusted-ca-bundle
+	// volumes:
+	//   - name: trusted-ca-bundle
+	//     configMap:
+	//       name: trusted-ca-bundle
+	//       items:
+	//       - key: ca-bundle.crt
+	//         path: "tls-ca-bundle.pem"
+
+	required.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+		required.Spec.Template.Spec.Containers[0].VolumeMounts,
+
+		corev1.VolumeMount{
+			Name:      trustedCABundle,
+			MountPath: "/etc/pki/ca-trust/extracted/pem/",
+		})
+
+	optionalVolume := true
+	required.Spec.Template.Spec.Volumes = append(required.Spec.Template.Spec.Volumes,
+		corev1.Volume{
+			Name: trustedCABundle,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: trustedCABundle,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  "ca-bundle.crt",
+							Path: "tls-ca-bundle.pem",
+						},
+					},
+					Optional: &optionalVolume,
+				},
+			},
+		})
 }
 
 func addProxyToEnvironment(required *appsv1.DaemonSet, proxyConfig *configv1.Proxy) {

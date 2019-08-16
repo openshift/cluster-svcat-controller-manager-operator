@@ -16,6 +16,7 @@
 // bindata/v3.11.0/openshift-svcat-controller-manager/servicemonitor-rolebinding.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/servicemonitor.yaml
 // bindata/v3.11.0/openshift-svcat-controller-manager/svc.yaml
+// bindata/v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml
 package v311_00_assets
 
 import (
@@ -680,6 +681,32 @@ func v3110OpenshiftSvcatControllerManagerSvcYaml() (*asset, error) {
 	return a, nil
 }
 
+var _v3110OpenshiftSvcatControllerManagerTrustedCaYaml = []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: openshift-service-catalog-controller-manager
+  name: trusted-ca-bundle
+  labels:
+    config.openshift.io/inject-trusted-cabundle: "true"
+data:
+  ca-bundle.crt:
+`)
+
+func v3110OpenshiftSvcatControllerManagerTrustedCaYamlBytes() ([]byte, error) {
+	return _v3110OpenshiftSvcatControllerManagerTrustedCaYaml, nil
+}
+
+func v3110OpenshiftSvcatControllerManagerTrustedCaYaml() (*asset, error) {
+	bytes, err := v3110OpenshiftSvcatControllerManagerTrustedCaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -748,6 +775,7 @@ var _bindata = map[string]func() (*asset, error){
 	"v3.11.0/openshift-svcat-controller-manager/servicemonitor-rolebinding.yaml":              v3110OpenshiftSvcatControllerManagerServicemonitorRolebindingYaml,
 	"v3.11.0/openshift-svcat-controller-manager/servicemonitor.yaml":                          v3110OpenshiftSvcatControllerManagerServicemonitorYaml,
 	"v3.11.0/openshift-svcat-controller-manager/svc.yaml":                                     v3110OpenshiftSvcatControllerManagerSvcYaml,
+	"v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml":                              v3110OpenshiftSvcatControllerManagerTrustedCaYaml,
 }
 
 // AssetDir returns the file names below a certain
@@ -809,6 +837,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"servicemonitor-rolebinding.yaml":              {v3110OpenshiftSvcatControllerManagerServicemonitorRolebindingYaml, map[string]*bintree{}},
 			"servicemonitor.yaml":                          {v3110OpenshiftSvcatControllerManagerServicemonitorYaml, map[string]*bintree{}},
 			"svc.yaml":                                     {v3110OpenshiftSvcatControllerManagerSvcYaml, map[string]*bintree{}},
+			"trusted-ca.yaml":                              {v3110OpenshiftSvcatControllerManagerTrustedCaYaml, map[string]*bintree{}},
 		}},
 	}},
 }}

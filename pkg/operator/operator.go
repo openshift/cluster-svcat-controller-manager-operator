@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
+	informerscorev1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/flowcontrol"
@@ -58,6 +59,7 @@ func NewServiceCatalogControllerManagerOperator(
 	kubeInformersForServiceCatalogControllerManager informers.SharedInformerFactory,
 	operatorConfigClient operatorclientv1.OperatorV1Interface,
 	proxyInformer proxyinformersv1.ProxyInformer,
+	configMapInformer informerscorev1.ConfigMapInformer,
 	configClient versioned.Interface,
 	kubeClient kubernetes.Interface,
 	dynamicClient dynamic.Interface,
@@ -85,6 +87,9 @@ func NewServiceCatalogControllerManagerOperator(
 
 	// get notified of proxy config changes
 	proxyInformer.Informer().AddEventHandler(c.eventHandler())
+
+	// get notified when the configmap in our namespace changes
+	configMapInformer.Informer().AddEventHandler(c.eventHandler())
 
 	return c
 }
