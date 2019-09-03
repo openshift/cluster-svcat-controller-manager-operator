@@ -212,18 +212,35 @@ func manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(k
 	trustedCAConfigMap := resourceread.ReadConfigMapV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/trusted-ca.yaml"))
 
 	currentTrustedCAConfigMap, err := client.ConfigMaps(targetNamespaceName).Get(trustedCABundle, metav1.GetOptions{})
+
+	// Ensure we create the ConfigMap for the trusted-ca-bundle, and that it has
+	// the right labels. Lifted from cluster-openshift-controller-manager
+	// operator for the most part.
 	if apierrors.IsNotFound(err) {
-		return nil, false, nil
-	} else if err != nil {
-		return nil, false, err
+		newConfig, err := client.ConfigMaps(targetNamespaceName).Create(trustedCAConfigMap)
+		if err != nil {
+			recorder.Eventf("ConfigMapCreateFailed", "Failed to create %s%s/%s-n %s: %v", "configmap", "", "trusted-ca-bundle", targetNamespaceName, err)
+			return nil, true, err
+		}
+		recorder.Eventf("ConfigMapCreated", "Created %s%s/%s-n %s because it was missing", "configmap", "", "trusted-ca-bundle", targetNamespaceName)
+		return newConfig, true, nil
 	}
 
-	requiredTrustedCAConfigMap, _, err := resourcemerge.MergeConfigMap(trustedCAConfigMap, trustedCABundle, nil, []byte(currentTrustedCAConfigMap.Data["ca-bundle.crt"]))
+	// Ensure the trusted-ca-bundle ConfigMap has the correct label
+	modified := resourcemerge.BoolPtr(false)
+	currentCopy := currentTrustedCAConfigMap.DeepCopy()
+	resourcemerge.EnsureObjectMeta(modified, &currentCopy.ObjectMeta, trustedCAConfigMap.ObjectMeta)
+	if !*modified {
+		return currentTrustedCAConfigMap, false, nil
+	}
+
+	updated, err := client.ConfigMaps(targetNamespaceName).Update(currentTrustedCAConfigMap)
 	if err != nil {
-		return nil, false, err
+		recorder.Eventf("ConfigMapUpdateFailed", "Failed to update %s%s/%s-n %s: %v", "configmap", "", "trusted-ca-bundle", targetNamespaceName, err)
+		return nil, true, err
 	}
-
-	return resourceapply.ApplyConfigMap(client, recorder, requiredTrustedCAConfigMap)
+	recorder.Eventf("ConfigMapUpdated", "Updated %s%s/%s-n %s because it was missing", "configmap", "", "trusted-ca-bundle", targetNamespaceName)
+	return updated, true, nil
 }
 
 func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
