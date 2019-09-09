@@ -219,11 +219,13 @@ func manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(k
 	if apierrors.IsNotFound(err) {
 		newConfig, err := client.ConfigMaps(targetNamespaceName).Create(trustedCAConfigMap)
 		if err != nil {
-			recorder.Eventf("ConfigMapCreateFailed", "Failed to create %s%s/%s-n %s: %v", "configmap", "", "trusted-ca-bundle", targetNamespaceName, err)
+			recorder.Eventf("ConfigMapCreateFailed", "Failed to create %s/%s-n %s: %v", "configmap", "trusted-ca-bundle", targetNamespaceName, err)
 			return nil, true, err
 		}
-		recorder.Eventf("ConfigMapCreated", "Created %s%s/%s-n %s because it was missing", "configmap", "", "trusted-ca-bundle", targetNamespaceName)
+		recorder.Eventf("ConfigMapCreated", "Created %s/%s-n %s because it was missing", "configmap", "trusted-ca-bundle", targetNamespaceName)
 		return newConfig, true, nil
+	} else if err != nil {
+		return trustedCAConfigMap, false, err
 	}
 
 	// Ensure the trusted-ca-bundle ConfigMap has the correct label
@@ -234,12 +236,12 @@ func manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(k
 		return currentTrustedCAConfigMap, false, nil
 	}
 
-	updated, err := client.ConfigMaps(targetNamespaceName).Update(currentTrustedCAConfigMap)
+	updated, err := client.ConfigMaps(targetNamespaceName).Update(currentCopy)
 	if err != nil {
-		recorder.Eventf("ConfigMapUpdateFailed", "Failed to update %s%s/%s-n %s: %v", "configmap", "", "trusted-ca-bundle", targetNamespaceName, err)
+		recorder.Eventf("ConfigMapUpdateFailed", "Failed to update %s/%s-n %s: %v", "configmap", "trusted-ca-bundle", targetNamespaceName, err)
 		return nil, true, err
 	}
-	recorder.Eventf("ConfigMapUpdated", "Updated %s%s/%s-n %s because it was missing", "configmap", "", "trusted-ca-bundle", targetNamespaceName)
+	recorder.Eventf("ConfigMapUpdated", "Updated %s/%s-n %s because it was missing", "configmap", "trusted-ca-bundle", targetNamespaceName)
 	return updated, true, nil
 }
 
