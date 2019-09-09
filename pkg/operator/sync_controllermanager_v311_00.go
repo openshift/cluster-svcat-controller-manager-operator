@@ -225,7 +225,7 @@ func manageServiceCatalogControllerManagerTrustedCAConfigMap_v311_00_to_latest(k
 		recorder.Eventf("ConfigMapCreated", "Created %s/%s-n %s because it was missing", "configmap", "trusted-ca-bundle", targetNamespaceName)
 		return newConfig, true, nil
 	} else if err != nil {
-		return trustedCAConfigMap, false, err
+		return nil, false, err
 	}
 
 	// Ensure the trusted-ca-bundle ConfigMap has the correct label
