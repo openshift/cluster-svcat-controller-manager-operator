@@ -96,7 +96,7 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 
 	// our configmaps and secrets are in order, now it is time to create the DS
 	// TODO check basic preconditions here
-	actualDaemonSet, _, err := manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(c.kubeClient.AppsV1(), c.recorder, operatorConfig, c.targetImagePullSpec, operatorConfig.Status.Generations, forceRollout, proxyConfig, trustedCAModified)
+	actualDaemonSet, _, err := manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(c.kubeClient.AppsV1(), c.recorder, operatorConfig, c.targetImagePullSpec, operatorConfig.Status.Generations, forceRollout, proxyConfig, c.kubeClient.CoreV1())
 	if err != nil {
 		errors = append(errors, fmt.Errorf("%q: %v", "deployment", err))
 	}
@@ -249,7 +249,7 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 	client appsclientv1.DaemonSetsGetter, recorder events.Recorder,
 	options *operatorapiv1.ServiceCatalogControllerManager, imagePullSpec string,
 	generationStatus []operatorapiv1.GenerationStatus, forceRollout bool,
-	proxyConfig *configv1.Proxy, trustedCAModified bool) (*appsv1.DaemonSet, bool, error) {
+	proxyConfig *configv1.Proxy, configMapClient coreclientv1.ConfigMapsGetter) (*appsv1.DaemonSet, bool, error) {
 
 	// read the stock daemonset, this is NOT the live one
 	required := resourceread.ReadDaemonSetV1OrDie(v311_00_assets.MustAsset("v3.11.0/openshift-svcat-controller-manager/ds.yaml"))
@@ -270,8 +270,12 @@ func manageServiceCatalogControllerManagerDeployment_v311_00_to_latest(
 		level = 3
 	}
 
-	// if trustedCAModified we should add a mount point to the daemonset
-	if trustedCAModified {
+	// if trustedCAConfigMap exists, we should add a mount point to the daemonset
+	exists, err := trustedCAConfigMapExists(configMapClient, targetNamespaceName)
+	if err != nil {
+		return nil, false, err
+	}
+	if exists {
 		addTrustedCAVolumeToDaemonSet(required)
 	}
 
@@ -460,4 +464,16 @@ func addProxyToEnvironment(required *appsv1.DaemonSet, proxyConfig *configv1.Pro
 				Value: proxyConfig.Status.NoProxy,
 			},
 		}...)
+}
+
+func trustedCAConfigMapExists(client coreclientv1.ConfigMapsGetter, namespace string) (bool, error) {
+	_, err := client.ConfigMaps(namespace).Get(trustedCABundle, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	// configmap found
+	return true, nil
 }
