@@ -39,6 +39,5 @@ spec:
             summary: Indicates whether Service Catalog is enabled
           expr: |
             service_catalog_controller_manager_enabled > 0
-          for: 12h
           labels:
             severity: warning
