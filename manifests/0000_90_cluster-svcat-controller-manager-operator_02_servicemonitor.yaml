@@ -24,3 +24,20 @@ spec:
   selector:
     matchLabels:
       app: openshift-service-catalog-controller-manager-operator
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: openshift-service-catalog-controller-manager-operator
+  namespace: openshift-service-catalog-controller-manager-operator
+spec:
+  groups:
+    - name: svcat-controller-manager-enabled
+      rules:
+        - alert: ServiceCatalogControllerManagerEnabled
+          annotations:
+            summary: Indicates whether Service Catalog Controller Manager is enabled
+          expr: |
+            service_catalog_controller_manager_enabled > 0
+          labels:
+            severity: warning

@@ -12,6 +12,7 @@ import (
 	proxyinformersv1 "github.com/openshift/client-go/config/informers/externalversions/config/v1"
 	operatorclientv1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	operatorinformersv1 "github.com/openshift/client-go/operator/informers/externalversions/operator/v1"
+	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/metrics"
 	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/util"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
@@ -141,6 +142,7 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 				return err
 			}
 		}
+		metrics.ControllerManagerDisabled()
 		return nil
 
 	case operatorapiv1.Removed:
@@ -177,6 +179,7 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 				return err
 			}
 		}
+		metrics.ControllerManagerDisabled()
 		return nil
 
 	default:
@@ -184,6 +187,7 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 		return nil
 	}
 
+	metrics.ControllerManagerEnabled()
 	forceRequeue, err := syncServiceCatalogControllerManager_v311_00_to_latest(c, operatorConfig, proxyConfig)
 	if forceRequeue && err != nil {
 		c.queue.AddRateLimited(workQueueKey)
