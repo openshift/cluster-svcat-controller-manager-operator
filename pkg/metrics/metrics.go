@@ -6,6 +6,14 @@ import (
 )
 
 var (
+	buildInfo = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "openshift_cluster_svcat_apiserver_operator_build_info",
+			Help: "A metric with a constant '1' value labeled by major, minor, git commit & git version from which OpenShift Service Catalog Operator was built.",
+		},
+		[]string{"major", "minor", "gitCommit", "gitVersion"},
+	)
+
 	controllerManagerEnabled = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "service_catalog_controller_manager_enabled",
@@ -15,6 +23,7 @@ var (
 
 func init() {
 	// do the MustRegister here
+	prometheus.MustRegister(buildInfo)
 	prometheus.MustRegister(controllerManagerEnabled)
 }
 
@@ -30,12 +39,18 @@ func recoverMetricPanic() {
 // ControllerManagerEnabled - Indicates Service Catalog Controller Manager has been enabled
 func ControllerManagerEnabled() {
 	defer recoverMetricPanic()
-	controllerManagerEnabled.Inc()
+	controllerManagerEnabled.Set(1.0)
 }
 
 // ControllerManagerDisabled - Indicates Service Catalog Controller Manager has
 // been disabled
 func ControllerManagerDisabled() {
 	defer recoverMetricPanic()
-	controllerManagerEnabled.Dec()
+	controllerManagerEnabled.Set(0.0)
+}
+
+// RegisterVersion - Emits the operator's build information
+func RegisterVersion(major, minor, gitCommit, gitVersion string) {
+	defer recoverMetricPanic()
+	buildInfo.WithLabelValues(major, minor, gitCommit, gitVersion).Set(1)
 }
