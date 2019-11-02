@@ -10,11 +10,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/cmd/operator"
+	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/version"
 	utilflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/logs"
-
-	"github.com/openshift/cluster-svcat-controller-manager-operator/pkg/cmd/operator"
 )
+
+var versionFlag = goflag.Bool("version", false, "displays source commit info.")
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -24,6 +26,13 @@ func main() {
 
 	logs.InitLogs()
 	defer logs.FlushLogs()
+
+	goflag.Parse()
+	if *versionFlag {
+		fmt.Print(version.Commit())
+		// Exit immediately
+		os.Exit(0)
+	}
 
 	command := NewSSCSCommand()
 	if err := command.Execute(); err != nil {
