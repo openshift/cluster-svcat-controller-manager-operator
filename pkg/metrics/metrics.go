@@ -1,21 +1,22 @@
 package metrics
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
+	k8smetrics "k8s.io/component-base/metrics"
+	"k8s.io/component-base/metrics/legacyregistry"
 	"k8s.io/klog"
 )
 
 var (
-	buildInfo = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
+	buildInfo = k8smetrics.NewGaugeVec(
+		&k8smetrics.GaugeOpts{
 			Name: "openshift_cluster_svcat_apiserver_operator_build_info",
 			Help: "A metric with a constant '1' value labeled by major, minor, git commit & git version from which OpenShift Service Catalog Operator was built.",
 		},
 		[]string{"major", "minor", "gitCommit", "gitVersion"},
 	)
 
-	controllerManagerEnabled = prometheus.NewGauge(
-		prometheus.GaugeOpts{
+	controllerManagerEnabled = k8smetrics.NewGauge(
+		&k8smetrics.GaugeOpts{
 			Name: "service_catalog_controller_manager_enabled",
 			Help: "Indicates whether Service Catalog controller manager is enabled",
 		})
@@ -23,8 +24,8 @@ var (
 
 func init() {
 	// do the MustRegister here
-	prometheus.MustRegister(buildInfo)
-	prometheus.MustRegister(controllerManagerEnabled)
+	legacyregistry.MustRegister(buildInfo)
+	legacyregistry.MustRegister(controllerManagerEnabled)
 }
 
 // We will never want to panic our operator because of metric saving.
