@@ -9,7 +9,7 @@ import (
 var (
 	buildInfo = k8smetrics.NewGaugeVec(
 		&k8smetrics.GaugeOpts{
-			Name: "openshift_cluster_svcat_apiserver_operator_build_info",
+			Name: "openshift_cluster_svcat_controller_manager_operator_build_info",
 			Help: "A metric with a constant '1' value labeled by major, minor, git commit & git version from which OpenShift Service Catalog Operator was built.",
 		},
 		[]string{"major", "minor", "gitCommit", "gitVersion"},
