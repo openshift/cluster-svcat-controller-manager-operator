@@ -136,6 +136,12 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 			Reason:  "Unmanaged",
 			Message: "the controller manager is in an unmanaged state, therefore no operator actions are failing.",
 		})
+		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
+			Type:    operatorapiv1.OperatorStatusTypeUpgradeable,
+			Status:  operatorapiv1.ConditionFalse,
+			Reason:  "Unmanaged",
+			Message: "the controller manager is in an unmanaged state, therefore no changes are being applied.",
+		})
 
 		if !equality.Semantic.DeepEqual(operatorConfig.Status, originalOperatorConfig.Status) {
 			if _, err := c.operatorConfigClient.ServiceCatalogControllerManagers().UpdateStatus(operatorConfig); err != nil {
@@ -156,19 +162,25 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 			Type:    operatorapiv1.OperatorStatusTypeAvailable,
 			Status:  operatorapiv1.ConditionTrue,
 			Reason:  "Removed",
-			Message: "",
+			Message: "the controller manager is not initially installed, operator is available, switch to Managed to enable.",
 		})
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
 			Type:    operatorapiv1.OperatorStatusTypeProgressing,
 			Status:  operatorapiv1.ConditionFalse,
 			Reason:  "Removed",
-			Message: "",
+			Message: "the controller manager is in a removed state, therefore no changes are being applied.",
 		})
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
 			Type:    operatorapiv1.OperatorStatusTypeDegraded,
 			Status:  operatorapiv1.ConditionFalse,
 			Reason:  "Removed",
 			Message: "",
+		})
+		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
+			Type:    operatorapiv1.OperatorStatusTypeUpgradeable,
+			Status:  operatorapiv1.ConditionFalse,
+			Reason:  "Removed",
+			Message: "the controller manager is in a removed state, upgrades are possible.",
 		})
 
 		// The version must be reported even though the operand is not running

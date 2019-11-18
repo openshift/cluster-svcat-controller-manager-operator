@@ -131,6 +131,7 @@ func syncServiceCatalogControllerManager_v311_00_to_latest(c ServiceCatalogContr
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
 			Type:   operatorapiv1.OperatorStatusTypeProgressing,
 			Status: operatorapiv1.ConditionFalse,
+			Reason: "DesiredStateAchieved",
 		})
 	} else {
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
