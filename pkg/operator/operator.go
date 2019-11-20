@@ -110,6 +110,13 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 		}
 	}
 
+	v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
+		Type:    operatorapiv1.OperatorStatusTypeUpgradeable,
+		Status:  operatorapiv1.ConditionTrue,
+		Reason:  "",
+		Message: "",
+	})
+
 	switch operatorConfig.Spec.ManagementState {
 	case operatorapiv1.Managed:
 		// redundant but it makes reading this switch later more clear
