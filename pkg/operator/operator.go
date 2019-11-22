@@ -111,6 +111,13 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 		}
 	}
 
+	v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
+		Type:    operatorapiv1.OperatorStatusTypeUpgradeable,
+		Status:  operatorapiv1.ConditionTrue,
+		Reason:  "",
+		Message: "",
+	})
+
 	switch operatorConfig.Spec.ManagementState {
 	case operatorapiv1.Managed:
 		// redundant but it makes reading this switch later more clear
@@ -135,12 +142,6 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 			Status:  operatorapiv1.ConditionFalse,
 			Reason:  "Unmanaged",
 			Message: "the controller manager is in an unmanaged state, therefore no operator actions are failing.",
-		})
-		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
-			Type:    operatorapiv1.OperatorStatusTypeUpgradeable,
-			Status:  operatorapiv1.ConditionFalse,
-			Reason:  "Unmanaged",
-			Message: "the controller manager is in an unmanaged state, therefore no changes are being applied.",
 		})
 
 		if !equality.Semantic.DeepEqual(operatorConfig.Status, originalOperatorConfig.Status) {
@@ -175,12 +176,6 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 			Status:  operatorapiv1.ConditionFalse,
 			Reason:  "Removed",
 			Message: "",
-		})
-		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
-			Type:    operatorapiv1.OperatorStatusTypeUpgradeable,
-			Status:  operatorapiv1.ConditionFalse,
-			Reason:  "Removed",
-			Message: "the controller manager is in a removed state, upgrades are possible.",
 		})
 
 		// The version must be reported even though the operand is not running
