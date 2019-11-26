@@ -5,7 +5,7 @@ It should be noted this repo was initially copied from the OpenShift Controller 
 
 [The Cluster Version Operator](https://github.com/openshift/cluster-version-operator) installs cluster operators by collecting the files within each cluster operator's manifest directory, bundling them into a release payload, and then `oc apply`ing them.  Note that unlike most cluster operators, this operator's configuration specifies that the initial management state of the Operator is `Removed`.  That is, the cluster operator is installed and running, but the operand is not.
 
-This operator is installed to the `openshift-service-catalog-controller-manager-operator` namespace.  It installs the Service Catalog Controller Manager into the `openshift-service-catalog-controller-manager` namespace.  In prior versions, both the Service Catalog API Server and Controller Manager were installed to kube-service-catalog.  This change keeps with how the OpenShift API Server & Controller Manager are managed and makes some aspects of servicability easier.
+This operator is installed to the `openshift-service-catalog-controller-manager-operator` namespace.  It installs the Service Catalog Controller Manager into the `openshift-service-catalog-controller-manager` namespace.  In prior versions, both the Service Catalog API Server and Controller Manager were installed to kube-service-catalog.  This change keeps with how the OpenShift API Server & Controller Manager are managed and makes some aspects of serviceability easier.
 
 
 ## Installing Service Catalog
@@ -71,7 +71,7 @@ $ oc scale --replicas 0 -n openshift-service-catalog-controller-manager-operator
 $ oc scale --replicas 1 -n openshift-service-catalog-controller-manager-operator deployments/openshift-service-catalog-controller-manager-operator
 ```
 
-If you want your own Service Catalog API Server to be deployed you follow a simlar process but instead update the deployment's IMAGE environment variable:
+If you want your own Service Catalog API Server to be deployed you follow a similar process but instead update the deployment's IMAGE environment variable:
 ```
         env:
         - name: IMAGE
