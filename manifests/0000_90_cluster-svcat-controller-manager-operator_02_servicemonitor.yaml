@@ -36,6 +36,7 @@ spec:
       rules:
         - alert: ServiceCatalogControllerManagerEnabled
           annotations:
+            message: Indicates whether Service Catalog Controller Manager is enabled
             summary: Indicates whether Service Catalog Controller Manager is enabled
           expr: |
             service_catalog_controller_manager_enabled > 0
