@@ -65,11 +65,26 @@ func main() {
 		if err := kubeClient.CoreV1().Namespaces().Delete(targetNamespaceName, nil); err != nil && !apierrors.IsNotFound(err) {
 			fmt.Println("error %v", err)
 		}
+		fmt.Println("removing the CR")
+		err = operatorConfigClient.ServiceCatalogControllerManagers().Delete("cluster", &metav1.DeleteOptions{})
+		if err != nil {
+			fmt.Println("cr deletion failed: %v", err)
+		} else {
+			fmt.Println("looks like svcat cm cr removed")
+		}
 		break
 	case operatorapiv1.Removed:
+		fmt.Println("status is in removed")
 		// TODO: check to see if there are any remanents of the Service Catalog
 		if err := kubeClient.CoreV1().Namespaces().Delete(targetNamespaceName, nil); err != nil && !apierrors.IsNotFound(err) {
 			fmt.Println("error %v", err)
+		}
+		fmt.Println("removing the CR")
+		err = operatorConfigClient.ServiceCatalogControllerManagers().Delete("cluster", &metav1.DeleteOptions{})
+		if err != nil {
+			fmt.Println("cr deletion failed: %v", err)
+		} else {
+			fmt.Println("looks like svcat cm cr removed")
 		}
 		break
 	default:
