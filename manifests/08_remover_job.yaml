@@ -1,14 +1,14 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: pi
+  name: openshift-service-catalog-controller-manager-remover
 spec:
   template:
     spec:
       containers:
       - name: pi
         # image will be some registry image
-        image: perl
+        image: registry.svc.ci.openshift.org/openshift/origin-v4.0:cluster-svcat-controller-manager-operator
         command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
       restartPolicy: Never
   backoffLimit: 4
