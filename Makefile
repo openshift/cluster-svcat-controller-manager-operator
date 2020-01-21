@@ -34,7 +34,6 @@ test-e2e:
 
 verify: verify-govet
 	hack/verify-gofmt.sh
-	hack/verify-generated-bindata.sh
 .PHONY: verify
 
 verify-govet:
