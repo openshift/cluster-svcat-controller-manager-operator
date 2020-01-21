@@ -2,6 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: openshift-service-catalog-controller-manager-remover
+  namespace: openshift-service-catalog-controller-manager-remover
 spec:
   template:
     spec:
@@ -9,6 +10,6 @@ spec:
       - name: pi
         # image will be some registry image
         image: registry.svc.ci.openshift.org/openshift/origin-v4.0:cluster-svcat-controller-manager-operator
-        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+        command: ["/usr/bin/cluster-svcat-controller-manager-remover"]
       restartPolicy: Never
   backoffLimit: 4
