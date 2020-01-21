@@ -1,17 +1,15 @@
 package main
 
 import (
-	"fmt"
-
 	operatorapiv1 "github.com/openshift/api/operator/v1"
 	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
+	log "github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
-	"k8s.io/klog"
 )
 
 var targetNamespaceName = "openshift-service-catalog-controller-manager-operator"
@@ -30,14 +28,15 @@ func createClientConfigFromFile(configPath string) (*rest.Config, error) {
 }
 
 func main() {
-	fmt.Println("job")
+	log.Info("Starting openshift-service-catalog-controller-manager-remover job")
+
 	clientConfig, err := rest.InClusterConfig()
 	if err != nil {
 		clientConfig, err = createClientConfigFromFile(homedir.HomeDir() + "/.kube/config")
 		if err != nil {
 			//log.Error("Failed to create LocalClientSet")
 			//return nil, err
-			klog.Error("Failed to create LocalClientSet")
+			log.Error("Failed to create LocalClientSet")
 			panic(err.Error())
 		}
 	}
@@ -49,45 +48,48 @@ func main() {
 
 	operatorClient, err := operatorclient.NewForConfig(clientConfig)
 	if err != nil {
-		fmt.Println("error %v", err)
+		log.Errorf("problem getting operator client, error %v", err)
 	}
 	operatorConfigClient := operatorClient.OperatorV1()
 	operatorConfig, err := operatorConfigClient.ServiceCatalogControllerManagers().Get("cluster", metav1.GetOptions{})
 	if err != nil {
-		fmt.Println("error %v", err)
+		log.Errorf("problem getting ServiceCatalogControllerManage CR, error %v", err)
 	}
 
 	switch operatorConfig.Spec.ManagementState {
 	case operatorapiv1.Managed:
-		fmt.Println("We found a cluster-svcat-controller-manager-operator in Managed state. Aborting")
+		log.Warning("We found a cluster-svcat-controller-manager-operator in Managed state. Aborting")
 		break
 	case operatorapiv1.Unmanaged:
+		log.Info("ServiceCatalogControllerManager managementState is 'Unmanaged'")
+		log.Infof("Removing target namespace %s", targetNamespaceName)
 		if err := kubeClient.CoreV1().Namespaces().Delete(targetNamespaceName, nil); err != nil && !apierrors.IsNotFound(err) {
-			fmt.Println("error %v", err)
+			log.Errorf("problem removing target namespace [%s] :  %v", targetNamespaceName, err)
 		}
-		fmt.Println("removing the CR")
+		log.Info("Removing the ServiceCatalogControllerManager CR")
 		err = operatorConfigClient.ServiceCatalogControllerManagers().Delete("cluster", &metav1.DeleteOptions{})
 		if err != nil {
-			fmt.Println("cr deletion failed: %v", err)
+			log.Errorf("ServiceCatalogControllerManager cr deletion failed: %v", err)
 		} else {
-			fmt.Println("looks like svcat cm cr removed")
+			log.Info("ServiceCatalogControllerManager cr removed successfully.")
 		}
 		break
 	case operatorapiv1.Removed:
-		fmt.Println("status is in removed")
+		log.Info("ServiceCatalogControllerManager managementState is 'Removed'")
+		log.Infof("Removing target namespace %s", targetNamespaceName)
 		// TODO: check to see if there are any remanents of the Service Catalog
 		if err := kubeClient.CoreV1().Namespaces().Delete(targetNamespaceName, nil); err != nil && !apierrors.IsNotFound(err) {
-			fmt.Println("error %v", err)
+			log.Errorf("problem removing target namespace [%s] :  %v", targetNamespaceName, err)
 		}
-		fmt.Println("removing the CR")
+		log.Info("Removing the ServiceCatalogControllerManager CR")
 		err = operatorConfigClient.ServiceCatalogControllerManagers().Delete("cluster", &metav1.DeleteOptions{})
 		if err != nil {
-			fmt.Println("cr deletion failed: %v", err)
+			log.Errorf("ServiceCatalogControllerManager cr deletion failed: %v", err)
 		} else {
-			fmt.Println("looks like svcat cm cr removed")
+			log.Info("ServiceCatalogControllerManager cr removed successfully.")
 		}
 		break
 	default:
-		fmt.Println("Unknown management state")
+		log.Error("Unknown managementState")
 	}
 }
