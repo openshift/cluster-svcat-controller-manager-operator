@@ -1,8 +1,11 @@
 package main
 
 import (
+	"os"
+
 	operatorapiv1 "github.com/openshift/api/operator/v1"
 	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
+	operatorv1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	log "github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,6 +30,23 @@ func createClientConfigFromFile(configPath string) (*rest.Config, error) {
 	return config, nil
 }
 
+func deleteTargetNamespace(kubeClient *kubernetes.Clientset, target string) {
+	log.Infof("Removing target namespace %s", target)
+	if err := kubeClient.CoreV1().Namespaces().Delete(target, nil); err != nil && !apierrors.IsNotFound(err) {
+		log.Errorf("problem removing target namespace [%s] :  %v", target, err)
+	}
+}
+
+func deleteCustomResource(client operatorv1.OperatorV1Interface) {
+	log.Info("Removing the ServiceCatalogControllerManager CR")
+	err := client.ServiceCatalogControllerManagers().Delete("cluster", &metav1.DeleteOptions{})
+	if err != nil {
+		log.Errorf("ServiceCatalogControllerManager cr deletion failed: %v", err)
+	} else {
+		log.Info("ServiceCatalogControllerManager cr removed successfully.")
+	}
+}
+
 func main() {
 	log.Info("Starting openshift-service-catalog-controller-manager-remover job")
 
@@ -34,8 +54,6 @@ func main() {
 	if err != nil {
 		clientConfig, err = createClientConfigFromFile(homedir.HomeDir() + "/.kube/config")
 		if err != nil {
-			//log.Error("Failed to create LocalClientSet")
-			//return nil, err
 			log.Error("Failed to create LocalClientSet")
 			panic(err.Error())
 		}
@@ -52,43 +70,26 @@ func main() {
 	}
 	operatorConfigClient := operatorClient.OperatorV1()
 	operatorConfig, err := operatorConfigClient.ServiceCatalogControllerManagers().Get("cluster", metav1.GetOptions{})
-	if err != nil {
+	if apierrors.IsNotFound(err) {
+		log.Info("ServiceCatalogControllerManager cr has already been removed.")
+		deleteTargetNamespace(kubeClient, targetNamespaceName)
+		os.Exit(0)
+	} else if err != nil {
 		log.Errorf("problem getting ServiceCatalogControllerManage CR, error %v", err)
 	}
 
+	// Handle the various ManagementStates
 	switch operatorConfig.Spec.ManagementState {
 	case operatorapiv1.Managed:
 		log.Warning("We found a cluster-svcat-controller-manager-operator in Managed state. Aborting")
-		break
 	case operatorapiv1.Unmanaged:
 		log.Info("ServiceCatalogControllerManager managementState is 'Unmanaged'")
-		log.Infof("Removing target namespace %s", targetNamespaceName)
-		if err := kubeClient.CoreV1().Namespaces().Delete(targetNamespaceName, nil); err != nil && !apierrors.IsNotFound(err) {
-			log.Errorf("problem removing target namespace [%s] :  %v", targetNamespaceName, err)
-		}
-		log.Info("Removing the ServiceCatalogControllerManager CR")
-		err = operatorConfigClient.ServiceCatalogControllerManagers().Delete("cluster", &metav1.DeleteOptions{})
-		if err != nil {
-			log.Errorf("ServiceCatalogControllerManager cr deletion failed: %v", err)
-		} else {
-			log.Info("ServiceCatalogControllerManager cr removed successfully.")
-		}
-		break
+		deleteTargetNamespace(kubeClient, targetNamespaceName)
+		deleteCustomResource(operatorConfigClient)
 	case operatorapiv1.Removed:
 		log.Info("ServiceCatalogControllerManager managementState is 'Removed'")
-		log.Infof("Removing target namespace %s", targetNamespaceName)
-		// TODO: check to see if there are any remanents of the Service Catalog
-		if err := kubeClient.CoreV1().Namespaces().Delete(targetNamespaceName, nil); err != nil && !apierrors.IsNotFound(err) {
-			log.Errorf("problem removing target namespace [%s] :  %v", targetNamespaceName, err)
-		}
-		log.Info("Removing the ServiceCatalogControllerManager CR")
-		err = operatorConfigClient.ServiceCatalogControllerManagers().Delete("cluster", &metav1.DeleteOptions{})
-		if err != nil {
-			log.Errorf("ServiceCatalogControllerManager cr deletion failed: %v", err)
-		} else {
-			log.Info("ServiceCatalogControllerManager cr removed successfully.")
-		}
-		break
+		deleteTargetNamespace(kubeClient, targetNamespaceName)
+		deleteCustomResource(operatorConfigClient)
 	default:
 		log.Error("Unknown managementState")
 	}
