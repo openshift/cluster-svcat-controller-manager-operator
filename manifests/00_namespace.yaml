@@ -3,6 +3,6 @@ kind: Namespace
 metadata:
   labels:
     openshift.io/cluster-monitoring: "true"
-  name: openshift-service-catalog-controller-manager-remover
+  name: openshift-service-catalog-removed
   annotations:
     openshift.io/node-selector: ""
