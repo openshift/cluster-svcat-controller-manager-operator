@@ -6,8 +6,9 @@ metadata:
 spec:
   template:
     spec:
+      serviceAccountName: openshift-service-catalog-controller-manager-remover
       containers:
-      - name: pi
+      - name: openshift-service-catalog-controller-manager-remover
         # image will be some registry image
         image: registry.svc.ci.openshift.org/openshift/origin-v4.0:cluster-svcat-controller-manager-operator
         command: ["/usr/bin/cluster-svcat-controller-manager-remover"]
