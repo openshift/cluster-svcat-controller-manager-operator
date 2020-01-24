@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-var removerNamespaceName = "openshift-service-catalog-controller-manager-remover"
+var removerNamespaceName = "openshift-service-catalog-removed"
 var operatorNamespaceName = "openshift-service-catalog-controller-manager-operator"
 
 func TestRemoverNamespace(t *testing.T) {
