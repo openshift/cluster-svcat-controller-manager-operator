@@ -2,7 +2,7 @@ all: build
 .PHONY: all
 
 # Include the library makefile
-include $(addprefix ./vendor/github.com/openshift/library-go/alpha-build-machinery/make/, \
+include $(addprefix ./vendor/github.com/openshift/build-machinery-go/make/, \
 	golang.mk \
 	targets/openshift/bindata.mk \
 	targets/openshift/images.mk \
@@ -11,6 +11,7 @@ include $(addprefix ./vendor/github.com/openshift/library-go/alpha-build-machine
 IMAGE_REGISTRY?=registry.svc.ci.openshift.org
 
 GO_TEST_PACKAGES :=./pkg/... ./cmd/...
+
 
 # This will call a macro called "build-image" which will generate image specific targets based on the parameters:
 # $0 - macro name
