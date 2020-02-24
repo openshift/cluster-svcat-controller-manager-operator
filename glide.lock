@@ -1,5 +1,5 @@
-hash: 7d969105686fe0124773da0216cacf46ec5610562aa7319d9b4ea5c477da6be0
-updated: 2020-02-20T14:57:04.889377129-05:00
+hash: a20cecac0d158720edf32c09c5297ac30bbeea39510f4a616b0fbfa4622d8c7d
+updated: 2020-02-20T15:25:09.353074418-05:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -180,6 +180,8 @@ imports:
   - template/v1
   - user
   - user/v1
+- name: github.com/openshift/build-machinery-go
+  version: 5e3d6e5701604fe70bd68156d2e5f7dea4acf4b3
 - name: github.com/openshift/client-go
   version: 92a2713fa240ea8a375a982d60b43ef5119f85ba
   subpackages:
