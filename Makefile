@@ -2,12 +2,12 @@ IMAGE ?= docker.io/openshift/origin-cluster-svcat-controller-manager-operator
 TAG ?= latest
 PROG  := cluster-svcat-controller-manager-operator
 REPO_PATH:= github.com/openshift/cluster-svcat-controller-manager-operator
-GOFLAGS := -ldflags "-X '${REPO_PATH}/pkg/version.SourceGitCommit=$(shell git rev-parse HEAD)'"
+GO_LD_FLAGS := -ldflags="-X '${REPO_PATH}/pkg/version.SourceGitCommit=$(shell git rev-parse HEAD)'"
 
 all: build build-image verify
 .PHONY: all
 build:
-	GODEBUG=tls13=1 go build ${GOFLAGS} ./cmd/cluster-svcat-controller-manager-operator
+	GODEBUG=tls13=1 go build ${GO_LD_FLAGS} ./cmd/cluster-svcat-controller-manager-operator
 .PHONY: build
 
 image:
