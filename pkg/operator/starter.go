@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -21,21 +22,21 @@ import (
 	"github.com/openshift/library-go/pkg/operator/status"
 )
 
-func RunOperator(ctx *controllercmd.ControllerContext) error {
-	kubeClient, err := kubernetes.NewForConfig(ctx.ProtoKubeConfig)
+func RunOperator(ctx context.Context, controllerCtx *controllercmd.ControllerContext) error {
+	kubeClient, err := kubernetes.NewForConfig(controllerCtx.ProtoKubeConfig)
 	if err != nil {
 		return err
 	}
-	operatorClient, err := operatorclient.NewForConfig(ctx.KubeConfig)
+	operatorClient, err := operatorclient.NewForConfig(controllerCtx.KubeConfig)
 	if err != nil {
 		return err
 	}
 
-	configClient, err := configclient.NewForConfig(ctx.KubeConfig)
+	configClient, err := configclient.NewForConfig(controllerCtx.KubeConfig)
 	if err != nil {
 		return err
 	}
-	dynamicClient, err := dynamic.NewForConfig(ctx.KubeConfig)
+	dynamicClient, err := dynamic.NewForConfig(controllerCtx.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -56,7 +57,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 		configClient,
 		kubeClient,
 		dynamicClient,
-		ctx.EventRecorder,
+		controllerCtx.EventRecorder,
 	)
 
 	opClient := &genericClient{
@@ -79,7 +80,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 		configInformers.Config().V1().ClusterOperators(),
 		opClient,
 		versionGetter,
-		ctx.EventRecorder,
+		controllerCtx.EventRecorder,
 	)
 
 	operatorConfigInformers.Start(ctx.Done())
@@ -89,7 +90,7 @@ func RunOperator(ctx *controllercmd.ControllerContext) error {
 	configMapInformers.Start(ctx.Done())
 
 	go operator.Run(1, ctx.Done())
-	go clusterOperatorStatus.Run(1, ctx.Done())
+	go clusterOperatorStatus.Run(ctx, 1)
 
 	<-ctx.Done()
 	return fmt.Errorf("stopped")
