@@ -3,6 +3,7 @@ TAG ?= latest
 PROG  := cluster-svcat-controller-manager-remover
 REPO_PATH:= github.com/openshift/cluster-svcat-controller-manager-operator
 GO_LD_FLAGS := -ldflags "-X '${REPO_PATH}/pkg/version.SourceGitCommit=$(shell git rev-parse HEAD)'"
+GOFLAGS := -mod=vendor
 
 all: build build-image verify
 .PHONY: all
