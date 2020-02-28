@@ -12,5 +12,8 @@ spec:
         # image will be some registry image
         image: registry.svc.ci.openshift.org/openshift/origin-v4.0:cluster-svcat-controller-manager-operator
         command: ["/usr/bin/cluster-svcat-controller-manager-remover"]
+        resources:
+          requests:
+            memory: 50Mi
       restartPolicy: Never
   backoffLimit: 4
