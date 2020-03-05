@@ -9,6 +9,7 @@ spec:
       serviceAccountName: openshift-service-catalog-controller-manager-remover
       containers:
       - name: openshift-service-catalog-controller-manager-remover
+        securityContext: {}
         # image will be some registry image
         image: registry.svc.ci.openshift.org/openshift/origin-v4.0:cluster-svcat-controller-manager-operator
         command: ["/usr/bin/cluster-svcat-controller-manager-remover"]
