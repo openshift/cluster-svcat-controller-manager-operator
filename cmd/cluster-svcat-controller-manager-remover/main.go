@@ -127,4 +127,5 @@ func main() {
 	default:
 		log.Error("Unknown managementState")
 	}
+	log.Info("The openshift-service-catalog-controller-manater-remover job has finished.")
 }
