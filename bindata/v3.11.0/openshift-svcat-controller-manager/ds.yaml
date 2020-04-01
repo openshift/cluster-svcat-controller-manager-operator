@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  namespace: openshift-service-catalog-controller-manager
+  name: controller-manager
+  labels:
+    app: svcat-controller-manager
+    controller-manager: "true"
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: svcat-controller-manager
+      controller-manager: "true"
+  template:
+    metadata:
+      name: svcat-controller-manager
+      labels:
+        app: svcat-controller-manager
+        controller-manager: "true"
+    spec:
+      serviceAccountName: service-catalog-controller
+      containers:
+      - name: controller-manager
+        terminationMessagePolicy: FallbackToLogsOnError
+        image: ${IMAGE}
+        imagePullPolicy: IfNotPresent
+        command: ["/usr/bin/service-catalog"]
+        args:
+        - controller-manager
+        - --secure-port
+        - "6443"
+        - --leader-election-namespace
+        - openshift-service-catalog-controller-manager
+        - --leader-elect-resource-lock
+        - configmaps
+        - --cluster-id-configmap-namespace=openshift-service-catalog-controller-manager
+        - --broker-relist-interval
+        - "5m"
+        - --feature-gates
+        - OriginatingIdentity=true
+        - --feature-gates
+        - AsyncBindingOperations=true
+        - --feature-gates
+        - NamespacedServiceBroker=true
+        resources:
+          requests:
+            memory: 100Mi
+            cpu: 100m
+        ports:
+        - containerPort: 6443
+        volumeMounts:
+        - mountPath: /var/run/kubernetes-service-catalog
+          name: apiserver-ssl
+          readOnly: true
+        - mountPath: /var/run/configmaps/config
+          name: config
+        - mountPath: /var/run/configmaps/client-ca
+          name: client-ca
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
+        readinessProbe:
+          httpGet:
+            port: 6443
+            path: /healthz/ready
+            scheme: HTTPS
+          failureThreshold: 3
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        livenessProbe:
+          httpGet:
+            port: 6443
+            path: /healthz
+            scheme: HTTPS
+          failureThreshold: 3
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+      volumes:
+      - name: apiserver-ssl
+        secret:
+          defaultMode: 420
+          secretName: serving-cert
+          items:
+          - key: tls.crt
+            path: apiserver.crt
+          - key: tls.key
+            path: apiserver.key
+      - name: config
+        configMap:
+          name: config
+      - name: client-ca
+        configMap:
+          name: client-ca
+      - name: serving-cert
+        secret:
+          secretName: serving-cert
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      priorityClassName: "system-cluster-critical"
+      tolerations:
+      - operator: Exists

@@ -1,0 +1,10 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cluster-info-configmap
+  namespace: openshift-service-catalog-controller-manager
+rules:
+- apiGroups:     [""]
+  resources:     ["configmaps"]
+  resourceNames: ["cluster-info"]
+  verbs:         ["get","create","list","watch","update"]
