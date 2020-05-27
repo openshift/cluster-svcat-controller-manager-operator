@@ -117,7 +117,7 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 			Type:    operatorapiv1.OperatorStatusTypeUpgradeable,
 			Status:  operatorapiv1.ConditionFalse,
 			Reason:  "Managed",
-			Message: "the controller manager is in a managed state, upgrades are not possible.",
+			Message: "The Service Catalog is deprecated, upgrades are not possible. Please visit this link for further details: https://docs.openshift.com/container-platform/4.4/applications/service_brokers/installing-service-catalog.html",
 		})
 	case operatorapiv1.Unmanaged:
 		// manage status
@@ -126,25 +126,25 @@ func (c ServiceCatalogControllerManagerOperator) sync() error {
 			Type:    operatorapiv1.OperatorStatusTypeAvailable,
 			Status:  operatorapiv1.ConditionUnknown,
 			Reason:  "Unmanaged",
-			Message: "the controller manager is in an unmanaged state, therefore its availability is unknown.",
+			Message: "The controller manager is in an unmanaged state, therefore its availability is unknown.",
 		})
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
 			Type:    operatorapiv1.OperatorStatusTypeProgressing,
 			Status:  operatorapiv1.ConditionFalse,
 			Reason:  "Unmanaged",
-			Message: "the controller manager is in an unmanaged state, therefore no changes are being applied.",
+			Message: "The controller manager is in an unmanaged state, therefore no changes are being applied.",
 		})
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
 			Type:    operatorapiv1.OperatorStatusTypeDegraded,
 			Status:  operatorapiv1.ConditionFalse,
 			Reason:  "Unmanaged",
-			Message: "the controller manager is in an unmanaged state, therefore no operator actions are failing.",
+			Message: "The controller manager is in an unmanaged state, therefore no operator actions are failing.",
 		})
 		v1helpers.SetOperatorCondition(&operatorConfig.Status.Conditions, operatorapiv1.OperatorCondition{
 			Type:    operatorapiv1.OperatorStatusTypeUpgradeable,
 			Status:  operatorapiv1.ConditionTrue,
 			Reason:  "Unmanaged",
-			Message: "the controller manager is in an unmanaged state, upgrades are possible.",
+			Message: "The controller manager is in an unmanaged state, upgrades are possible.",
 		})
 
 		if !equality.Semantic.DeepEqual(operatorConfig.Status, originalOperatorConfig.Status) {
