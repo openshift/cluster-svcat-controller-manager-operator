@@ -20,3 +20,5 @@ require (
 	k8s.io/component-base v0.17.1
 	k8s.io/klog v1.0.0
 )
+
+replace golang.org/x/text => golang.org/x/text v0.3.3
